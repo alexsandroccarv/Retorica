@@ -19,11 +19,14 @@
 #  +----------------------------------------------------------------+
 
 # pacotes
-if(require(rjson) == F) {install.packages("rjson"); require(rjson)}
+if(require(rjson) == F) {
+    install.packages("rjson", dependencies=TRUE, repos="http://cran.rstudio.com/");
+    require(rjson)
+}
 
 # load de arquivos -------------------------------------------------------------
 
-setwd('Diretorio')
+setwd('.')
 
 load("DTM.RData") # Document Term Matrix
 load("Autor_Matrix.RData") # Author Matrix
@@ -31,9 +34,9 @@ load("Info.RData")
 
 source('ExpAgendVMVA.R')
 
-topics <- exp.agenda.vonmon(term.doc = as.matrix(dtm), authors = autorMatrix, 
-                          n.cats = 70, 
-                          verbose = T, kappa = 400)
+topics <- exp.agenda.vonmon(term.doc = as.matrix(dtm),
+                            authors = autorMatrix,
+                            n.cats = 70, verbose = T, kappa = 400)
 
 # Definindo topicos de cada autor e arquivo final
 autorTopicOne <- NULL
