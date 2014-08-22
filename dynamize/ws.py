@@ -4,8 +4,12 @@ import datetime
 import logging
 import os.path
 import sys
+import base64
 
 import suds
+import ofs
+from ofs.local import PTOFS
+from ofs.base import BucketExists
 
 
 def get_basic_logger(logger=None, level=logging.INFO):
@@ -13,7 +17,6 @@ def get_basic_logger(logger=None, level=logging.INFO):
         logger = __name__
     logger = logging.getLogger(logger)
     logger.setLevel(level)
-    logger.addHandler(logging.StreamHandler(sys.stdout))
     return logger
 
 
@@ -23,6 +26,13 @@ def ensure_iterator(obj):
     else:
         iterable = [obj]
     return iter(iterable)
+
+
+def ptofs_get_or_claim_bucket(storage, bucket):
+    try:
+        return storage.claim_bucket(bucket)
+    except BucketExists:
+        return bucket
 
 
 logger = get_basic_logger()
@@ -43,6 +53,9 @@ start_date = datetime.date(2011, 2, 2)
 chunk_size = datetime.timedelta(days=360)
 
 
+# Armazenamento em sistema de arquivos
+storage = PTOFS()
+
 # O serviço existe que a diferença entre as datas iniciais e finais seja de no
 # máximo 360 dias. Pegaremos, por tanto, os dados em pedaços.
 
@@ -60,9 +73,6 @@ while sd <= today:
     sessoes = client.service.ListarDiscursosPlenario(
         dataIni=sd.strftime(date_format), dataFim=ed.strftime(date_format))
 
-    def get_first_discurso(s):
-        fs = s.sessoesDiscursos.sessao[0]
-
     first_session = next(ensure_iterator(sessoes.sessoesDiscursos.sessao))
     first = next(ensure_iterator(first_session.fasesSessao.faseSessao))
     first = next(ensure_iterator(first.discursos.discurso))
@@ -74,9 +84,45 @@ while sd <= today:
     previous_count = count
 
     for sessao in ensure_iterator(sessoes.sessoesDiscursos.sessao):
+
+        bucket = ptofs_get_or_claim_bucket(storage, sessao.codigo.strip())
+
         for fase in ensure_iterator(sessao.fasesSessao.faseSessao):
             for discurso in ensure_iterator(fase.discursos.discurso):
                 count += 1
+
+                # Identificador do discurso
+                uid = ':'.join([
+                    sessao.codigo.strip(),
+                    discurso.orador.numero,
+                    discurso.numeroQuarto,
+                    discurso.numeroInsercao,
+                ])
+
+                if not storage.exists(bucket, uid):
+                    logger.info('Obtendo discurso {0}'.format(uid))
+
+                    teor = client.service.obterInteiroTeorDiscursosPlenario(
+                        codSessao=sessao.codigo.strip(),
+                        numOrador=discurso.orador.numero,
+                        numQuarto=discurso.numeroQuarto,
+                        numInsercao=discurso.numeroInsercao,
+                    )
+                    teor = teor.sessao
+
+                    conteudo = base64.b64decode(teor.discursoRTFBase64)
+
+                    storage.put_stream(bucket, uid, conteudo, {
+                        'orador': unicode(teor.nome).strip(),
+                        'partido': unicode(teor.partido).strip(),
+                        'uf': unicode(teor.uf).strip(),
+                        'proferido_em': datetime.datetime.strptime(teor.horaInicioDiscurso, '%d/%m/%Y %H:%M:%S').isoformat(),
+                        'codigo_sessao': unicode(sessao.codigo).strip(),
+                        'numero_orador': int(discurso.orador.numero),
+                        'numero_quarto': int(discurso.numeroQuarto),
+                        'numero_insercao': int(discurso.numeroInsercao),
+                        'fase_sessao': unicode(fase.descricao).strip(),
+                    })
     else:
         logger.info('   Última sessão: {0}'.format(sessao.numero))
         logger.info('   Último discurso: {0}'.format(discurso.horaInicioDiscurso))
