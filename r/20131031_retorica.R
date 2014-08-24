@@ -23,6 +23,10 @@ if(require(rjson) == F) {
     install.packages("rjson", dependencies=TRUE, repos="http://cran.rstudio.com/");
     require(rjson)
 }
+if(require(tm) == F) {
+    install.packages("tm")
+    require(tm)
+}
 
 # load de arquivos -------------------------------------------------------------
 
