@@ -3,11 +3,9 @@ from __future__ import unicode_literals
 import datetime
 import logging
 import os.path
-import sys
 import base64
 
 import suds
-import ofs
 from ofs.local import PTOFS
 from ofs.base import BucketExists
 

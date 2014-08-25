@@ -4,17 +4,17 @@ from __future__ import unicode_literals
 import re
 import unicodedata
 import itertools
+import os.path
 
 import nltk
 import numpy
+import pandas
+import pandas.rpy.common
+import rpy2.robjects
+
 from ofs.local import PTOFS
 from pyth.plugins.plaintext.writer import PlaintextWriter
 from pyth.plugins.rtf15.reader import Rtf15Reader
-import pandas.rpy.common
-import rpy2.robjects
-from rpy2.robjects.packages import importr
-import os.path
-import pandas
 from sklearn.feature_extraction.text import CountVectorizer
 
 

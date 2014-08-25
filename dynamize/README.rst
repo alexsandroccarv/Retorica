@@ -1,5 +1,15 @@
+Scripts
+=======
+
+Scripts experimentais. Em breve os organizaremos melhor. Por enquanto, use
+Python 2 e instale tudo isso:
+
+::
+
+    $ pip install ofs pairtree pyth rpy2 scipy scikit-learn nltk numpy pandas
+
 ws.py
-=====
+-----
 
 O script **ws.py** varre o serviço de dados abertos da câmara coletando os
 conteúdos dos discursos nos períodos especificados (atualmente desde o dia
@@ -11,5 +21,16 @@ extrair os metadados.
 
 ::
 
-    $ pip install suds ofs pairtree
     $ python ws.py
+
+
+stemmer.py
+----------
+
+O script **stemmer.py** processa os documentos baixados pelo **ws.py**, gera
+uma DTM, interfaceia com o R, executa o algoritmo vonmon, salva a humanidade e
+domina o mundo.
+
+::
+
+    $ python stemmer.py
