@@ -169,7 +169,7 @@ print('Aplicando vonmon a {0} documentos, {1} palavras...'.format(
 ))
 
 # interfacear com R :)
-this_dir = os.path.dirname(__file__)
+this_dir = os.path.abspath(os.path.dirname(__file__))
 
 rpy2.robjects.r('setwd("{0}")'.format(this_dir))
 vonmon = rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")[0]
