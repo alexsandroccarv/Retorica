@@ -173,7 +173,8 @@ class WordFrequencyHelper(object):
 # identificar e remover palavras usadas menos de (7 * nbuckets) vezes
 # note que esse numero e completamente arbitrario e eu nao faco ideia
 # do que estou fazendo!
-fd = WordFrequencyHelper(min=(7*nbuckets))
+used_words_threshold = min(70, (7*NBUCKETS)) or 70
+fd = WordFrequencyHelper(min=used_words_threshold)
 
 dtm.apply(fd, 0)
 dtm.drop(fd.unused, axis=1, inplace=True)
