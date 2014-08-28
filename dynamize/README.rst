@@ -39,7 +39,8 @@ domina o mundo.
 Também, é preciso alterar o arquivo `pandas/rpy/common.py` e colocar isso numa
 linha específica. Por favor, alguém resolva isso.
 
-::
+..code:: python
+
             try:
                 value = VECTOR_TYPES[value_type](value)
             except KeyError:
