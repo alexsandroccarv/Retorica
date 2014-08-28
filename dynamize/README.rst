@@ -41,13 +41,13 @@ linha específica. Por favor, alguém resolva isso.
 
 ..code:: python
 
-            try:
-                value = VECTOR_TYPES[value_type](value)
-            except KeyError:
-                # do some magic just because
-                x = globals().get('NAMED_VECTOR_TYPES')
-                if x is None:
-                    x = globals().setdefault('NAMED_VECTOR_TYPES', dict((
-                        (t.__name__, v) for (t, v) in VECTOR_TYPES.iteritems()
-                    )))
-                value = x[value_type.__name__](value)
+    try:
+        value = VECTOR_TYPES[value_type](value)
+    except KeyError:
+        # do some magic just because
+        x = globals().get('NAMED_VECTOR_TYPES')
+        if x is None:
+            x = globals().setdefault('NAMED_VECTOR_TYPES', dict((
+                (t.__name__, v) for (t, v) in VECTOR_TYPES.iteritems()
+            )))
+        value = x[value_type.__name__](value)
