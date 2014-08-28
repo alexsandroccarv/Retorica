@@ -18,24 +18,33 @@ from pyth.plugins.rtf15.reader import Rtf15Reader
 from sklearn.feature_extraction.text import CountVectorizer
 
 
+# Quantidade de buckets que serão lidos. Deixe `0` para utilizar TODOS os
+# buckets.
+NBUCKETS = 20
+
+
 IGNORE_WORDS = set([
     # preposições
     'por', 'para', 'a', 'ante', 'ate', 'apos', 'de', 'desde', 'em', 'entre',
     'com', 'sem', 'sob', 'sobre',
 
-    # artigos e combinações
-    'a', 'o', 'ao', 'da', 'do', 'pelo', 'pela'
-
     # pronomes
-    'eu', 'tu', 'ele', 'ela', 'nós', 'vós', 'eles', 'elas', 'voce', 'me',
+    'eu', 'tu', 'ele', 'ela', 'nos', 'vos', 'eles', 'elas', 'voce', 'me',
     'mim', 'se',
 
+    # artigos e combinações
+    'a', 'o', 'ao', 'da', 'do', 'pelo', 'pela', 'as', 'os', 'aos', 'das',
+    'dos', 'pelos', 'pelas', 'um', 'uma', 'uns', 'umas'
+
     # etc
-    'que', 'sr', 'sra'
+    'que', 'sr', 'sra',
 ])
 
 IGNORE_STEMS = set([
-    'porq', 'nao', 'sao', 'quer', 'ser'
+    'porq', 'nao', 'sao', 'quer', 'ser', 'acontec', 'acord', 'agor',
+    'agradec', 'aind', 'algum', 'amanh', 'ano', 'anos', 'apen', 'apoi',
+    'apresent', 'aprov', 'assim', 'atend', 'ativ', 'autor', 'vem', 'vam',
+    'tud', 'quem', 'quer', 'que', 'onde', 'orador'
 ])
 
 
@@ -52,6 +61,7 @@ def dtm_as_dataframe(docs, labels=None, **kwargs):
     if labels:
         df.index = labels
     return df
+
 
 def prepare_document(doc):
     # Converter o documento do formato RTF para plaintext
@@ -76,6 +86,7 @@ def prepare_document(doc):
     stemmer = nltk.stem.snowball.PortugueseStemmer()
 
     return ' '.join(itertools.imap(stemmer.stem, words))
+
 
 def build_authors_matrix(storage, buckets):
     # gerar uma matriz n * 2 onde as linhas representam os indices dos autores no set de autores,
@@ -115,21 +126,24 @@ def build_authors_matrix(storage, buckets):
 
         authors_matrix.append((first, first + len(docs) - 1))
 
-    return document_list, authors_matrix
+    return document_list, authors_matrix, authors
 
 
 # inicializar o armazenamento
 storage = PTOFS()
 storage.list_buckets()
 
-# primeiros nbuckets disponiveis
-nbuckets = 5
-buckets = list(itertools.islice(storage.list_buckets(), 0, nbuckets))
+# primeiros `NBUCKETS` disponiveis
+buckets = storage.list_buckets()
+
+if NBUCKETS:
+    buckets = itertools.islice(buckets, 0, NBUCKETS)
 
 # Gerar uma DTM a partir de todos os documentos nos buckets selecionados
-documents, authors = build_authors_matrix(storage, buckets)
+documents, authors, author_names = build_authors_matrix(storage, buckets)
 
 print('Processando {0} documentos...'.format(len(documents)))
+
 
 def load_and_prepare_document(label):
     bucket = label.split(':')[0]
@@ -164,15 +178,14 @@ fd = WordFrequencyHelper(min=(7*nbuckets))
 dtm.apply(fd, 0)
 dtm.drop(fd.unused, axis=1, inplace=True)
 
-print('Aplicando vonmon a {0} documentos, {1} palavras...'.format(
-    len(dtm.index), len(dtm.columns),
+print('Aplicando vonmon a {0} documentos, {1} palavras e {2} autores...'.format(
+    len(dtm.index), len(dtm.columns), len(authors)
 ))
 
 # interfacear com R :)
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
 rpy2.robjects.r('setwd("{0}")'.format(this_dir))
-vonmon = rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")[0]
 
 # converter nossa matriz de autores para uma matriz r
 authors = pandas.DataFrame(numpy.matrix(authors))
@@ -180,4 +193,59 @@ authors = pandas.DataFrame(numpy.matrix(authors))
 rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
 rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
 
-topics = vonmon(term_doc=rdtm, authors=rauthors, n_cats=70, verbose=True, kappa=400)
+retorica = r'''
+retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
+
+topics <- exp.agenda.vonmon(term.doc = dtm, authors = autorMatrix,
+                            n.cats = ncats, verbose = verbose, kappa = kappa)
+
+# Definindo topicos de cada autor e arquivo final
+autorTopicOne <- NULL
+for( i in 1:dim(topics[[1]])[1]){
+  autorTopicOne[i] <- which.max(topics[[1]][i,])
+}
+
+# compute the proportion of documents from each author to each topic
+autorTopicPerc <- prop.table(topics[[1]], 1)
+
+autorTopicOne <- as.data.frame(autorTopicOne)
+
+for( i in 1:nrow(autorTopicOne)){
+  autorTopicOne$enfase[i] <- autorTopicPerc[i,which.max(autorTopicPerc[i,])]
+}
+
+topics$one <- autorTopicOne
+
+save("topics", file="topics.RData");
+
+return(topics)
+}
+'''
+
+# carregar o vonmon
+rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")
+
+# carregar o retorica
+retorica = rpy2.robjects.r(retorica)
+
+# chamar o retorica
+result = retorica(rdtm, rauthors)
+
+print('Salvando resultados...')
+print('topics.csv...')
+
+# temas relevantes estão salvos na variável `topics$one`
+topics = pandas.rpy.common.convert_robj(result[4])
+
+topics.index = author_names
+topics.columns = ('tema', 'enfase')
+
+topics.to_csv(os.path.join(this_dir, 'topics.csv'))
+
+print('topic_words.csv...')
+
+# relação entre palavras e temas
+topic_words = pandas.rpy.common.convert_robject(topics[2])
+topic_words.to_csv(os.path.join(this_dir, 'topic_words.csv'))
+
+print('Feito!')
