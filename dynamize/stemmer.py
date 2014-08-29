@@ -18,6 +18,8 @@ from pyth.plugins.rtf15.reader import Rtf15Reader
 from sklearn.feature_extraction.text import CountVectorizer
 
 
+THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+
 # Quantidade de buckets que serão lidos. Deixe `0` para utilizar TODOS os
 # buckets.
 NBUCKETS = 20
@@ -46,7 +48,6 @@ IGNORE_STEMS = set([
     'apresent', 'aprov', 'assim', 'atend', 'ativ', 'autor', 'vem', 'vam',
     'tud', 'quem', 'quer', 'que', 'onde', 'orador'
 ])
-
 
 def dtm_as_dataframe(docs, labels=None, **kwargs):
     """Create a DocumentTermMatrix as a pandas DataFrame.
@@ -173,20 +174,28 @@ class WordFrequencyHelper(object):
 # identificar e remover palavras usadas menos de (7 * nbuckets) vezes
 # note que esse numero e completamente arbitrario e eu nao faco ideia
 # do que estou fazendo!
-used_words_threshold = min(70, (7*NBUCKETS)) or 70
-fd = WordFrequencyHelper(min=used_words_threshold)
+used_words_threshold = min(10, 0.001 * len(dtm.columns))
+freq_words_threshold = 0.05 * len(dtm.columns)
+fd = WordFrequencyHelper(min=used_words_threshold, max=freq_words_threshold)
 
 dtm.apply(fd, 0)
+
+print('Ignorando {0} palavras usadas menos de {1} vezes'.format(
+    len(fd.unused), used_words_threshold))
+
+print('Ignorando {0} palavras usadas mais de {1} vezes'.format(
+    len(fd.frequent), freq_words_threshold))
+
 dtm.drop(fd.unused, axis=1, inplace=True)
+dtm.drop(fd.frequent, axis=1, inplace=True)
 
 print('Aplicando vonmon a {0} documentos, {1} palavras e {2} autores...'.format(
     len(dtm.index), len(dtm.columns), len(authors)
 ))
 
 # interfacear com R :)
-this_dir = os.path.abspath(os.path.dirname(__file__))
 
-rpy2.robjects.r('setwd("{0}")'.format(this_dir))
+rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
 # converter nossa matriz de autores para uma matriz r
 authors = pandas.DataFrame(numpy.matrix(authors))
@@ -241,12 +250,11 @@ topics = pandas.rpy.common.convert_robj(result[4])
 topics.index = author_names
 topics.columns = ('tema', 'enfase')
 
-topics.to_csv(os.path.join(this_dir, 'topics.csv'))
+topics.to_csv(os.path.join(THIS_DIR, 'topics.csv'), encoding='utf-8')
 
 print('topic_words.csv...')
 
-# relação entre palavras e temas
-topic_words = pandas.rpy.common.convert_robject(topics[2])
-topic_words.to_csv(os.path.join(this_dir, 'topic_words.csv'))
+write_table = rpy2.robjects.r('write.table')
+write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
 
 print('Feito!')
