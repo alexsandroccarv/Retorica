@@ -1,0 +1,37 @@
+<%= form_for(@deputado) do |f| %>
+  <% if @deputado.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@deputado.errors.count, "error") %> prohibited this deputado from being saved:</h2>
+
+      <ul>
+      <% @deputado.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :nome %><br>
+    <%= f.text_field :nome %>
+  </div>
+  <div class="field">
+    <%= f.label :partido %><br>
+    <%= f.text_field :partido %>
+  </div>
+  <div class="field">
+    <%= f.label :sexo %><br>
+    <%= f.text_field :sexo %>
+  </div>
+  <div class="field">
+    <%= f.label :uf %><br>
+    <%= f.text_field :uf %>
+  </div>
+  <div class="field">
+    <%= f.label :email %><br>
+    <%= f.text_field :email %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
