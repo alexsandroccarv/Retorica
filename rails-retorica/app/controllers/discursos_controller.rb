@@ -33,11 +33,7 @@ class DiscursosController < ApplicationController
     client = Savon.client(wsdl: 'http://www.camara.gov.br/SitCamaraWS/SessoesReunioes.asmx?wsdl')
     mod = delta_days.divmod(360)[1]
 
-    for i in 1..integer_interation
-      data_inicial
-      discursos_list = client.call(:listar_discursos_plenario
-      message: {DataInicial: data_inicial.strftime("%d/%m/%Y") })
-    end
+
 
 
     puts discursos_list

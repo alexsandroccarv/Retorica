@@ -1,7 +1,7 @@
 # -*- encoding : utf-8 -*-
 Retorica::Application.routes.draw do
 
-
+  root :to => 'application#index'
   resources :deputados, :except => [:new,:create, :edit, :delete] do
     collection { get :import }
   end
@@ -57,10 +57,4 @@ Retorica::Application.routes.draw do
   #     # (app/controllers/admin/products_controller.rb)
   #     resources :products
   #   end
-
-
-
-  get ':controller/:action/:id'
-  get ':controller/:action/:id:format'
-  get ':controller/:action/:owner_class/:owner_id'
 end
