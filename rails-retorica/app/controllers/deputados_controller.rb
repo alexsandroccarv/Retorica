@@ -13,62 +13,13 @@ class DeputadosController < ApplicationController
   def show
   end
 
-  # GET /deputados/new
-  def new
-    @deputado = Deputado.new
-  end
-
-  # GET /deputados/1/edit
-  def edit
-  end
-
 
   def import
-
     # Obtendo os deputados
     obter_deputados()
 
   end
 
-  # POST /deputados
-  # POST /deputados.json
-  def create
-    @deputado = Deputado.new(deputado_params)
-
-    respond_to do |format|
-      if @deputado.save
-        format.html { redirect_to @deputado, notice: 'Deputado was successfully created.' }
-        format.json { render action: 'show', status: :created, location: @deputado }
-      else
-        format.html { render action: 'new' }
-        format.json { render json: @deputado.errors, status: :unprocessable_entity }
-      end
-    end
-  end
-
-  # PATCH/PUT /deputados/1
-  # PATCH/PUT /deputados/1.json
-  def update
-    respond_to do |format|
-      if @deputado.update(deputado_params)
-        format.html { redirect_to @deputado, notice: 'Deputado was successfully updated.' }
-        format.json { head :no_content }
-      else
-        format.html { render action: 'edit' }
-        format.json { render json: @deputado.errors, status: :unprocessable_entity }
-      end
-    end
-  end
-
-  # DELETE /deputados/1
-  # DELETE /deputados/1.json
-  def destroy
-    @deputado.destroy
-    respond_to do |format|
-      format.html { redirect_to deputados_url }
-      format.json { head :no_content }
-    end
-  end
 
   private
   # Use callbacks to share common setup or constraints between actions.
@@ -111,8 +62,8 @@ class DeputadosController < ApplicationController
     deputado.each do |item|
 
       #Obtém-se os dados Pessoais do Deputado
-      nome_civil = item['nome_civil'].capitalize.titleize
-      nome_parlamentar_atual = item['nome_parlamentar_atual'].capitalize.titleize
+      nome_civil = item['nome_civil']
+      nome_parlamentar_atual = item['nome_parlamentar_atual']
       sexo = item['sexo']
       data_nascimento = Date.parse(item['data_nascimento'])
       email = item['email']
@@ -127,59 +78,16 @@ class DeputadosController < ApplicationController
       partido_atual = Partido.find_or_create_by(:nome => item.assoc('partido_atual')[1]['nome'],
                                              :sigla => item.assoc('partido_atual')[1]['sigla'])
 
-      # Criando a Filiação Partidária Atual
-      filiacao_partidaria_atual = FiliacaoPartidaria.find_or_create_by(:partido => partido_atual)
 
 
-      @filiacao_partidaria << filiacao_partidaria_atual
-
-
-      filiacoes = item.assoc('filiacoesPartidarias')
-
-      unless filiacoes.blank?
-        filiacoes.reverse_each do |filiacao|
-
-          # Nos dados providos pela Câmara, apenas a filiação posterior possui data de filiação
-
-          partido_posterior = Partido.find_or_create_by(:sigla => filiacao['siglaPartidoPosterior'],
-                                                        :nome => filiacao['nomePartidoPosterior'])
-
-          data_filiacao_posterior = Date.parse(filiacao['dataFiliacaoPartidoPosterior'])
-
-          filiacao_partidaria_posterior = FiliacaoPartidaria.find_or_create_by(:partido =>
-                                                                                   partido_posterior, :data_filiacao => data_filiacao_posterior)
-
-          # Adicionando a lista se não estiver lá
-          @filiacao_partidaria << filiacao_partidaria_posterior unless
-              @filiacao_partidaria.include?(filiacao_partidaria_posterior)
-
-
-          partido_anterior = Partido.find_or_by(:sigla => filiacao['siglaPartidoAnterior'],
-                                                :nome => filiacao['nomePartidoAnterior'])
-
-
-
-          filiacao_partidaria_anterior = FiliacaoPartidaria.find_or_create_by(:partido => partido_anterior)
-
-
-          # Adicionando a lista se não estiver lá
-          @filiacao_partidaria << filiacao_partidaria_anterior unless
-              @filiacao_partidaria.include?(filiacao_partidaria_anterior)
-
-        end
-      end
-
-
-      puts @filiacao_partidaria
-
-=begin
-  deputado_instance = Deputado.find_or_create_by!(:_id => id, :nome_civil => nome_civil,
+      deputado_instance = Deputado.find_or_create_by(:_id => id, :nome_civil => nome_civil,
                                          :nome_parlamentar => nome_parlamentar_atual,
                       :sexo => sexo, :data_nascimento => data_nascimento,
                       :email => email,
-                      :situacao_legislatura => situacao_legislatura, :partido => partido,
+                      :situacao_legislatura => situacao_legislatura,
                       :unidade_federativa => unidade_federativa)
-=end
+
+      partido_atual.deputados << deputado_instance
       end
     end
   end

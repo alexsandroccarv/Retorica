@@ -2,5 +2,5 @@ class UnidadeFederativa
   include Mongoid::Document
 
   field :sigla, type: String
-  embeds_many :deputados
+  has_and_belongs_to_many :deputados
 end

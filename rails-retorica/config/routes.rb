@@ -1,11 +1,12 @@
 # -*- encoding : utf-8 -*-
 Retorica::Application.routes.draw do
 
-  resources :deputados do
+
+  resources :deputados, :except => [:new,:create, :edit, :delete] do
     collection { get :import }
   end
 
-  resources :discursos  do
+  resources :discursos, :except => [:new, :create, :edit, :delete]  do
     collection { get :import }
   end
 

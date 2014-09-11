@@ -12,10 +12,9 @@ class Deputado
 
   field :data_nascimento, type: Date
   field :sexo, type: String
-  field :uf, type: String
   field :email, type: String
 
-  has_many :filiacao_partidaria
+  has_and_belongs_to_many :partidos
   belongs_to :unidade_federativa
 
 end
