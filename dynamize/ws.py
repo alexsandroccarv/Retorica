@@ -110,11 +110,15 @@ while sd <= today:
 
                     conteudo = base64.b64decode(teor.discursoRTFBase64)
 
+                    dt = teor.horaInicioDiscurso
+                    if dt:
+                        dt = datetime.datetime.strptime(dt, '%d/%m/%Y %H:%M:%S').isoformat()
+
                     storage.put_stream(bucket, uid, conteudo, {
                         'orador': unicode(teor.nome).strip(),
                         'partido': unicode(teor.partido).strip(),
                         'uf': unicode(teor.uf).strip(),
-                        'proferido_em': datetime.datetime.strptime(teor.horaInicioDiscurso, '%d/%m/%Y %H:%M:%S').isoformat(),
+                        'proferido_em': dt,
                         'codigo_sessao': unicode(sessao.codigo).strip(),
                         'numero_orador': int(discurso.orador.numero),
                         'numero_quarto': int(discurso.numeroQuarto),

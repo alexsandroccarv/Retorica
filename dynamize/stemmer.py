@@ -24,7 +24,6 @@ THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 # buckets.
 NBUCKETS = 20
 
-
 IGNORE_WORDS = set([
     # preposições
     'por', 'para', 'a', 'ante', 'ate', 'apos', 'de', 'desde', 'em', 'entre',
@@ -58,9 +57,13 @@ def dtm_as_dataframe(docs, labels=None, **kwargs):
     """
     vectorizer = CountVectorizer(**kwargs)
     x1 = vectorizer.fit_transform(docs)
+
+    # XXX Doesnt work for 81k+ docs
     df = pandas.DataFrame(x1.toarray(), columns=vectorizer.get_feature_names())
+
     if labels:
         df.index = labels
+
     return df
 
 
@@ -82,11 +85,9 @@ def prepare_document(doc):
     clean = re.sub(r'\s+', ' ', clean).lower().strip()
 
     # Filtrar palavras muito utilizadas que nao representam muita coisa nesse contexto
-    words = (w for w in clean.split() if not w in IGNORE_WORDS and not w.isdigit())
+    words = (w for w in clean.split() if not w.isdigit())
 
-    stemmer = nltk.stem.snowball.PortugueseStemmer()
-
-    return ' '.join(itertools.imap(stemmer.stem, words))
+    return ' '.join(nltk.stem.snowball.PortugueseStemmer())
 
 
 def build_authors_matrix(storage, buckets):
@@ -149,7 +150,11 @@ print('Processando {0} documentos...'.format(len(documents)))
 def load_and_prepare_document(label):
     bucket = label.split(':')[0]
     doc = storage.get_stream(bucket, label)
-    return prepare_document(doc)
+    try:
+        return prepare_document(doc)
+    except Exception, e:
+        print('Failed to load document {0}'.format(label))
+        return ''
 
 # carregar documentos e gerar uma dtm
 docs = itertools.imap(load_and_prepare_document, documents)
