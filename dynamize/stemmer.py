@@ -87,7 +87,9 @@ def prepare_document(doc):
     # Filtrar palavras muito utilizadas que nao representam muita coisa nesse contexto
     words = (w for w in clean.split() if not w.isdigit())
 
-    return ' '.join(nltk.stem.snowball.PortugueseStemmer())
+    stemmer = nltk.stem.snowball.PortugueseStemmer()
+
+    return ' '.join(itertools.imap(stemmer.stem, words))
 
 
 def build_authors_matrix(storage, buckets):
