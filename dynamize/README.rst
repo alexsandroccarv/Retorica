@@ -2,11 +2,13 @@ Scripts
 =======
 
 Scripts experimentais. Em breve os organizaremos melhor. Por enquanto, use
-Python 2 e instale tudo isso:
+Python 2 e instale todos os pacotes a seguir. Note que a instalação *deve*
+ser feita em dois passos:
 
 ::
 
-    $ pip install ofs pairtree pyth rpy2 scipy scikit-learn nltk numpy pandas
+    $ pip install suds ofs pairtree pyth rpy2 ltk numpy pandas Cython numexpr
+    $ pip install scipy scikit-learn tables
 
 ws.py
 -----
