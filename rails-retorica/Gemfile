@@ -2,32 +2,27 @@ source 'https://rubygems.org'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.1.5'
+
+#Mongo
 gem 'mongoid'
+
+
+# Soap client Ruby
 gem 'savon', '~> 2.3.0'
 
-# Gems used only for assets and not required
-# in production environments by default.
-group :assets do
-  gem 'sass-rails'
-  gem 'coffee-rails'
-  gem 'simple_form'
-
-
-  # See https://github.com/sstephenson/execjs#readme for more supported runtimes
-  # gem 'therubyracer', platforms: :ruby
-
-  gem 'uglifier', '>= 1.0.3'
-end
-
+# Assets
+gem 'sass-rails'
+gem 'coffee-rails'
+gem 'simple_form'
+gem 'uglifier', '>= 1.0.3'
 gem 'font-awesome-sass'
 gem 'momentjs-rails', '~> 2.5.0'
 gem 'jquery-ui-rails'
 gem 'bootstrap-sass', '~> 3.1.1.1'
-gem 'therubyracer', '0.10.2', :platforms => :ruby
-gem 'better_errors'
+
 gem 'jquery-rails'
 
-#XML Handling
+#JSON Path Handling
 gem 'jsonpath'
 
 #Thin WebClient
@@ -38,6 +33,10 @@ gem 'turbolinks'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 1.0.1'
 
+# Development
+gem 'therubyracer', '0.10.2', :platforms => :ruby
+gem 'better_errors'
+
 group :test do
   gem 'cucumber-rails', :require => false
     # database_cleaner is not required, but highly recommended
@@ -45,6 +44,9 @@ group :test do
   gem 'rspec-rails'
 end
 
+# Paperclip
+gem "mongoid-paperclip", :require => "mongoid_paperclip"
+gem 'aws-sdk', '~> 1.3.4'
 
 
 

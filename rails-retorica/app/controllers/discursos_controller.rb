@@ -33,10 +33,11 @@ class DiscursosController < ApplicationController
     client = Savon.client(wsdl: 'http://www.camara.gov.br/SitCamaraWS/SessoesReunioes.asmx?wsdl')
     mod = delta_days.divmod(360)[1]
 
+     until data_final == date_today
 
 
+     end
 
-    puts discursos_list
   end
 
 
