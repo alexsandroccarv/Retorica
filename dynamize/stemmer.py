@@ -13,9 +13,14 @@ import pandas.rpy.common
 import rpy2.robjects
 
 from ofs.local import PTOFS
+import pyth.document
+from pairtree.storage_exceptions import FileNotFoundException
 from pyth.plugins.plaintext.writer import PlaintextWriter
-from pyth.plugins.rtf15.reader import Rtf15Reader
+#from pyth.plugins.rtf15.reader import Rtf15Reader
 from sklearn.feature_extraction.text import CountVectorizer
+
+# XXX we should use local relative imports, but we are not in a package yet
+from rtfreader import CustomRtf15Reader as Rtf15Reader
 
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -24,29 +29,6 @@ THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 # buckets.
 NBUCKETS = 20
 
-IGNORE_WORDS = set([
-    # preposições
-    'por', 'para', 'a', 'ante', 'ate', 'apos', 'de', 'desde', 'em', 'entre',
-    'com', 'sem', 'sob', 'sobre',
-
-    # pronomes
-    'eu', 'tu', 'ele', 'ela', 'nos', 'vos', 'eles', 'elas', 'voce', 'me',
-    'mim', 'se',
-
-    # artigos e combinações
-    'a', 'o', 'ao', 'da', 'do', 'pelo', 'pela', 'as', 'os', 'aos', 'das',
-    'dos', 'pelos', 'pelas', 'um', 'uma', 'uns', 'umas'
-
-    # etc
-    'que', 'sr', 'sra',
-])
-
-IGNORE_STEMS = set([
-    'porq', 'nao', 'sao', 'quer', 'ser', 'acontec', 'acord', 'agor',
-    'agradec', 'aind', 'algum', 'amanh', 'ano', 'anos', 'apen', 'apoi',
-    'apresent', 'aprov', 'assim', 'atend', 'ativ', 'autor', 'vem', 'vam',
-    'tud', 'quem', 'quer', 'que', 'onde', 'orador'
-])
 
 def dtm_as_dataframe(docs, labels=None, **kwargs):
     """Create a DocumentTermMatrix as a pandas DataFrame.
@@ -67,9 +49,33 @@ def dtm_as_dataframe(docs, labels=None, **kwargs):
     return df
 
 
+def can_be_converted_to_text(p):
+    """Return `True` if the given `pyth.document.Paragraph` can be converted
+    to text by the PlaintextWriter, `False` otherwise.
+    """
+    if isinstance(p, pyth.document.Image):
+        return False
+    return True
+
+
+def sanitize_rtf_document(doc):
+    """Sanitize a `pyth.document.Document`, removing everything that can't be
+    converted to plain text.
+
+    WARNING! This method operates in place, changing the input *doc* and
+    returning `None`.
+    """
+    for paragraph in doc.content:
+        paragraph.content = filter(can_be_converted_to_text, paragraph.content)
+
+
 def prepare_document(doc):
     # Converter o documento do formato RTF para plaintext
     doc = Rtf15Reader.read(doc)
+
+    # Remove non-text elements from the rtf document
+    sanitize_rtf_document(doc)
+
     doc = PlaintextWriter.write(doc).read().decode('utf-8')
 
     # Remover caracteres especiais e acentuação
@@ -133,6 +139,14 @@ def build_authors_matrix(storage, buckets):
     return document_list, authors_matrix, authors
 
 
+def stemmed_bucket(bucket):
+    return 'st:' + bucket
+
+
+def is_stemmed_bucket(bucket):
+    return bucket.startswith('st:')
+
+
 # inicializar o armazenamento
 storage = PTOFS()
 storage.list_buckets()
@@ -143,6 +157,9 @@ buckets = storage.list_buckets()
 if NBUCKETS:
     buckets = itertools.islice(buckets, 0, NBUCKETS)
 
+# Remover buckets de cache
+buckets = itertools.ifilterfalse(is_stemmed_bucket, buckets)
+
 # Gerar uma DTM a partir de todos os documentos nos buckets selecionados
 documents, authors, author_names = build_authors_matrix(storage, buckets)
 
@@ -151,12 +168,27 @@ print('Processando {0} documentos...'.format(len(documents)))
 
 def load_and_prepare_document(label):
     bucket = label.split(':')[0]
-    doc = storage.get_stream(bucket, label)
+
     try:
-        return prepare_document(doc)
-    except Exception, e:
-        print('Failed to load document {0}'.format(label))
-        return ''
+        cache_bucket = stemmed_bucket(bucket)
+        doc = storage.get_stream(cache_bucket, label)
+        prep = doc.read()
+    except FileNotFoundException:
+        doc = storage.get_stream(bucket, label)
+
+        try:
+            prep = prepare_document(doc)
+        except Exception, e:
+            print('Failed to load document {0}'.format(label))
+            return ''
+
+        # TODO should be like a command line option
+        cache_stemmed = True
+        if cache_stemmed:
+            storage.put_stream(cache_bucket, label, prep)
+
+    return prep
+
 
 # carregar documentos e gerar uma dtm
 docs = itertools.imap(load_and_prepare_document, documents)
