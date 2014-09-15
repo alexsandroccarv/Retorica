@@ -6,6 +6,8 @@ import unicodedata
 import itertools
 import os.path
 
+from argparse import ArgumentParser
+
 import nltk
 import numpy
 import pandas
@@ -13,19 +15,15 @@ import pandas.rpy.common
 import rpy2.robjects
 
 
-from ofs.local import PTOFS
 import pyth.document
+from ofs.local import PTOFS
 from pairtree.storage_exceptions import FileNotFoundException
 from pyth.plugins.plaintext.writer import PlaintextWriter
-#from pyth.plugins.rtf15.reader import Rtf15Reader
 from sklearn.feature_extraction.text import CountVectorizer
 
 # XXX we should use local relative imports, but we are not in a package yet
 from rtfreader import CustomRtf15Reader as Rtf15Reader
 
-
-# How many buckets we want to read? Set to `0` to use ALL buckets.
-NBUCKETS = 2
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -37,14 +35,6 @@ def dtm_as_dataframe(docs, labels=None, **kwargs):
 
     *labels* will be used to label the rows
     """
-    vectorizer = CountVectorizer(**kwargs)
-    x1 = vectorizer.fit_transform(docs)
-
-    # XXX Doesnt work for 81k+ docs
-    df = pandas.DataFrame(x1.toarray(), columns=vectorizer.get_feature_names())
-
-    if labels:
-        df.index = labels
 
     return df
 
@@ -111,44 +101,6 @@ def all_document_labels(storage, buckets):
         for label in storage.list_labels(bucket):
             author = storage.get_metadata(bucket, label).get('orador')
             yield (label, author)
-
-
-def cut_frequent_or_infrequent_words(dtm):
-    """Cut from the given *dtm* words that are used too much or too less.
-
-    WARNING: This method changes the *dtm* IN PLACE!
-    """
-
-    class WordFrequencyHelper(object):
-
-        def __init__(self, min=2, max=float('inf')):
-            self.min = min
-            self.max = max
-            self.unused = []
-            self.frequent = []
-
-        def __call__(self, series):
-            s = series.sum()
-            if s < self.min:
-                self.unused.append(series.name)
-            if s > self.max:
-                self.frequent.append(series.name)
-
-    lower = min(10, 0.001 * len(dtm.columns))
-    upper = 0.05 * len(dtm.columns)
-
-    fd = WordFrequencyHelper(min=lower, max=upper)
-
-    dtm.apply(fd, 0)
-
-    print('Ignorando {0} palavras usadas menos de {1} vezes'.format(
-        len(fd.unused), lower))
-
-    print('Ignorando {0} palavras usadas mais de {1} vezes'.format(
-        len(fd.frequent), upper))
-
-    dtm.drop(fd.unused, axis=1, inplace=True)
-    dtm.drop(fd.frequent, axis=1, inplace=True)
 
 
 def stemmed_bucket(bucket):
@@ -280,10 +232,21 @@ def vonmon_authors_matrix(documents):
     return authors, labels
 
 
-def main():
+def main(argv):
 
-    # TODO FIXME These will probably be replaced by command line args
-    opts_nbuckets = NBUCKETS
+    parser = ArgumentParser(prog='stemmer')
+    parser.add_argument('--nbuckets', type=int, default=0,
+                        help=('the number of buckets you want to use as input'))
+    parser.add_argument('--mindf', type=float, default=1.0,
+                        help=('When building the vocabulary ignore terms that '
+                              'have a document frequency strictly lower than '
+                              'the given threshold. This value is also called '
+                              'cut-off in the literature. If float, the '
+                              'parameter represents a proportion of '
+                              'documents, integer absolute counts. Can be'
+                              'between 0.0 and 1.0'))
+
+    args = parser.parse_args(argv[1:])
 
     # inicializar o armazenamento
     storage = PTOFS()
@@ -295,9 +258,9 @@ def main():
     # Filter out buckets which are used for caching
     buckets = itertools.ifilterfalse(is_stemmed_bucket, buckets)
 
-    # Filter out all buckets that exceed the limit specified by `opts_nbuckets`
-    if opts_nbuckets:
-        buckets = itertools.islice(buckets, 0, opts_nbuckets)
+    # Filter out all buckets that exceed the limit specified by `args.nbuckets`
+    if args.nbuckets:
+        buckets = itertools.islice(buckets, 0, args.nbuckets)
 
     # Load labels and authors in the format `iter([(label, author), ...])`
     documents = all_document_labels(storage, buckets)
@@ -312,16 +275,20 @@ def main():
 
     print('Loading documents...')
 
-    #labels = [d[0] for d in documents]
-    prepdocs = itertools.imap(_load_and_prepare_document, labels)
-
     # Generate the Document Term Matrix
-    dtm = dtm_as_dataframe(prepdocs, labels=labels)
+    corpus = itertools.imap(_load_and_prepare_document, labels)
 
-    # Change in place
-    # TODO FIXME We should really drop this in favor of `CountVectorizer`'s
-    # `max_df` and `min_df` paramters
-    cut_frequent_or_infrequent_words(dtm)
+    mindf = max(1.0, args.mindf)
+    mindf = min(0.0, mindf)
+
+    cv = CountVectorizer(max_df=mindf)
+    ft = cv.fit_transform(corpus)
+
+    import pdb; pdb.set_trace()
+
+    # XXX FIXME Requires too much memory for a 81k x 74k dtm
+    dtm = pandas.DataFrame(ft.toarray(), index=labels,
+                           columns=cv.get_feature_names())
 
     # R matrices are 1-indexed, not 0-indexed, and this is an awesome trick :)
     authors = pandas.DataFrame(numpy.matrix(authors))
@@ -334,4 +301,5 @@ def main():
     return exp_agenda_vonmon(dtm, authors)
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv)
