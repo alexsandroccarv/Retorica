@@ -12,6 +12,7 @@ import pandas
 import pandas.rpy.common
 import rpy2.robjects
 
+
 from ofs.local import PTOFS
 import pyth.document
 from pairtree.storage_exceptions import FileNotFoundException
@@ -23,11 +24,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 from rtfreader import CustomRtf15Reader as Rtf15Reader
 
 
-THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+# How many buckets we want to read? Set to `0` to use ALL buckets.
+NBUCKETS = 2
 
-# Quantidade de buckets que serão lidos. Deixe `0` para utilizar TODOS os
-# buckets.
-NBUCKETS = 20
+THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def dtm_as_dataframe(docs, labels=None, **kwargs):
@@ -70,73 +70,85 @@ def sanitize_rtf_document(doc):
 
 
 def prepare_document(doc):
-    # Converter o documento do formato RTF para plaintext
+
     doc = Rtf15Reader.read(doc)
 
-    # Remove non-text elements from the rtf document
+    # Remove non textual elements from the RTF document
     sanitize_rtf_document(doc)
 
+    # Convert the RTF document to plain text
     doc = PlaintextWriter.write(doc).read().decode('utf-8')
 
-    # Remover caracteres especiais e acentuação
+    # Do our best to replace special characters (mostly accentuated chars) with
+    # their corresponding transliterated simplified chars
     clean = unicodedata.normalize('NFKD', doc).encode('ascii', 'ignore').decode('utf-8')
 
-    # Remover pontuação e outros caracteres que não compõem palavras
+    # Do our best to remove punctuation and stuff that don't compose words
     allowed_categories = set(('Lu', 'Ll', 'Nd', 'Zs'))
+
     filter_function = lambda c: c if unicodedata.category(c) in allowed_categories else '#'
 
     clean = ''.join(map(filter_function, clean)).replace('#', ' ')
 
-    # Últimos retoques
+    # We don't want no extra spaces
     clean = re.sub(r'\s+', ' ', clean).lower().strip()
 
-    # Filtrar palavras muito utilizadas que nao representam muita coisa nesse contexto
+    # XXX Is this really necessary?
+    # We only want words
     words = (w for w in clean.split() if not w.isdigit())
 
+    # Reduce words to their stemmed version
     stemmer = nltk.stem.snowball.PortugueseStemmer()
 
     return ' '.join(itertools.imap(stemmer.stem, words))
 
 
-def build_authors_matrix(storage, buckets):
-    # gerar uma matriz n * 2 onde as linhas representam os indices dos autores no set de autores,
-    # a primeira coluna indica o indice do primeiro documento do autor em questao, e a segunda,
-    # o indice de seu ultimo documento
-    authors_labels = {}
-
+def all_document_labels(storage, buckets):
+    """Return an iterator in the form of [(label, author), ...] of all
+    the documents in the given *buckets*
+    """
     for bucket in buckets:
-
         for label in storage.list_labels(bucket):
-            md = storage.get_metadata(bucket, label)
-            author = md['orador']
-            authors_labels.setdefault(author, []).append(label)
+            author = storage.get_metadata(bucket, label).get('orador')
+            yield (label, author)
 
-    # Remover todos os deputados com apenas um discurso
-    for author in authors_labels.keys():
-        if len(authors_labels[author]) < 2:
-            del authors_labels[author]
 
-    authors = sorted(authors_labels.keys())
+def cut_frequent_or_infrequent_words(dtm):
+    """Cut from the given *dtm* words that are used too much or too less.
 
-    authors_matrix = []
-    document_list = []
+    WARNING: This method changes the *dtm* IN PLACE!
+    """
 
-    for author in authors:
-        if not authors_matrix:
-            # matrizes utilizam índice 1-
-            first = 1
-        else:
-            first = authors_matrix[-1][1] + 1
+    class WordFrequencyHelper(object):
 
-        # documentos deste autor
-        docs = authors_labels[author]
+        def __init__(self, min=2, max=float('inf')):
+            self.min = min
+            self.max = max
+            self.unused = []
+            self.frequent = []
 
-        # A lista de documentos deve estar ordenada de acordo com os autores!
-        document_list.extend(docs)
+        def __call__(self, series):
+            s = series.sum()
+            if s < self.min:
+                self.unused.append(series.name)
+            if s > self.max:
+                self.frequent.append(series.name)
 
-        authors_matrix.append((first, first + len(docs) - 1))
+    lower = min(10, 0.001 * len(dtm.columns))
+    upper = 0.05 * len(dtm.columns)
 
-    return document_list, authors_matrix, authors
+    fd = WordFrequencyHelper(min=lower, max=upper)
+
+    dtm.apply(fd, 0)
+
+    print('Ignorando {0} palavras usadas menos de {1} vezes'.format(
+        len(fd.unused), lower))
+
+    print('Ignorando {0} palavras usadas mais de {1} vezes'.format(
+        len(fd.frequent), upper))
+
+    dtm.drop(fd.unused, axis=1, inplace=True)
+    dtm.drop(fd.frequent, axis=1, inplace=True)
 
 
 def stemmed_bucket(bucket):
@@ -147,30 +159,10 @@ def is_stemmed_bucket(bucket):
     return bucket.startswith('st:')
 
 
-# inicializar o armazenamento
-storage = PTOFS()
-storage.list_buckets()
-
-# primeiros `NBUCKETS` disponiveis
-buckets = storage.list_buckets()
-
-if NBUCKETS:
-    buckets = itertools.islice(buckets, 0, NBUCKETS)
-
-# Remover buckets de cache
-buckets = itertools.ifilterfalse(is_stemmed_bucket, buckets)
-
-# Gerar uma DTM a partir de todos os documentos nos buckets selecionados
-documents, authors, author_names = build_authors_matrix(storage, buckets)
-
-print('Processando {0} documentos...'.format(len(documents)))
-
-
-def load_and_prepare_document(label):
-    bucket = label.split(':')[0]
+def load_and_prepare_document(storage, bucket, label):
+    cache_bucket = stemmed_bucket(bucket)
 
     try:
-        cache_bucket = stemmed_bucket(bucket)
         doc = storage.get_stream(cache_bucket, label)
         prep = doc.read()
     except FileNotFoundException:
@@ -178,7 +170,7 @@ def load_and_prepare_document(label):
 
         try:
             prep = prepare_document(doc)
-        except Exception, e:
+        except Exception:
             print('Failed to load document {0}'.format(label))
             return ''
 
@@ -190,110 +182,156 @@ def load_and_prepare_document(label):
     return prep
 
 
-# carregar documentos e gerar uma dtm
-docs = itertools.imap(load_and_prepare_document, documents)
+def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
+    """
+    * **dtm** must be a pandas.DataFrame
+    * **authors** must be a pandas.DataFrame
+    """
+    rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
-dtm = dtm_as_dataframe(docs, labels=documents)
+    rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
+    rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
 
-# remover da DTM palavras pouco utilizadas
+    retorica = r'''
+    retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
 
-class WordFrequencyHelper(object):
-    def __init__(self, min=2, max=float('inf')):
-        self.min, self.max = min, max
-        self.unused = []
-        self.frequent = []
+    topics <- exp.agenda.vonmon(term.doc = dtm, authors = autorMatrix,
+                                n.cats = ncats, verbose = verbose, kappa = kappa)
 
-    def __call__(self, series):
-        s = series.sum()
-        if s < self.min:
-            self.unused.append(series.name)
-        if s > self.max:
-            self.frequent.append(series.name)
+    # Definindo topicos de cada autor e arquivo final
+    autorTopicOne <- NULL
+    for( i in 1:dim(topics[[1]])[1]){
+    autorTopicOne[i] <- which.max(topics[[1]][i,])
+    }
 
-# identificar e remover palavras usadas menos de (7 * nbuckets) vezes
-# note que esse numero e completamente arbitrario e eu nao faco ideia
-# do que estou fazendo!
-used_words_threshold = min(10, 0.001 * len(dtm.columns))
-freq_words_threshold = 0.05 * len(dtm.columns)
-fd = WordFrequencyHelper(min=used_words_threshold, max=freq_words_threshold)
+    # compute the proportion of documents from each author to each topic
+    autorTopicPerc <- prop.table(topics[[1]], 1)
 
-dtm.apply(fd, 0)
+    autorTopicOne <- as.data.frame(autorTopicOne)
 
-print('Ignorando {0} palavras usadas menos de {1} vezes'.format(
-    len(fd.unused), used_words_threshold))
+    for( i in 1:nrow(autorTopicOne)){
+    autorTopicOne$enfase[i] <- autorTopicPerc[i,which.max(autorTopicPerc[i,])]
+    }
 
-print('Ignorando {0} palavras usadas mais de {1} vezes'.format(
-    len(fd.frequent), freq_words_threshold))
+    topics$one <- autorTopicOne
 
-dtm.drop(fd.unused, axis=1, inplace=True)
-dtm.drop(fd.frequent, axis=1, inplace=True)
+    save("topics", file="topics.RData");
 
-print('Aplicando vonmon a {0} documentos, {1} palavras e {2} autores...'.format(
-    len(dtm.index), len(dtm.columns), len(authors)
-))
+    return(topics)
+    }
+    '''
 
-# interfacear com R :)
+    # carregar o vonmon
+    rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")
 
-rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
+    # carregar o retorica
+    retorica = rpy2.robjects.r(retorica)
 
-# converter nossa matriz de autores para uma matriz r
-authors = pandas.DataFrame(numpy.matrix(authors))
+    # chamar o retorica
+    result = retorica(rdtm, rauthors)
 
-rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
-rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
+    print('Salvando resultados...')
+    print('topics.csv...')
 
-retorica = r'''
-retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
+    # temas relevantes estão salvos na variável `topics$one`
+    topics = pandas.rpy.common.convert_robj(result[4])
 
-topics <- exp.agenda.vonmon(term.doc = dtm, authors = autorMatrix,
-                            n.cats = ncats, verbose = verbose, kappa = kappa)
+    topics.index = author_names
+    topics.columns = ('tema', 'enfase')
 
-# Definindo topicos de cada autor e arquivo final
-autorTopicOne <- NULL
-for( i in 1:dim(topics[[1]])[1]){
-  autorTopicOne[i] <- which.max(topics[[1]][i,])
-}
+    topics.to_csv(os.path.join(THIS_DIR, 'topics.csv'), encoding='utf-8')
 
-# compute the proportion of documents from each author to each topic
-autorTopicPerc <- prop.table(topics[[1]], 1)
+    print('topic_words.csv...')
 
-autorTopicOne <- as.data.frame(autorTopicOne)
+    write_table = rpy2.robjects.r('write.table')
+    write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
 
-for( i in 1:nrow(autorTopicOne)){
-  autorTopicOne$enfase[i] <- autorTopicPerc[i,which.max(autorTopicPerc[i,])]
-}
+    print('Feito!')
 
-topics$one <- autorTopicOne
 
-save("topics", file="topics.RData");
+def vonmon_authors_matrix(documents):
+    """Filter out authors with less than two documents and generate the
+    authors matrix required by vonmon.
 
-return(topics)
-}
-'''
+    Returns a tuple (authors, labels)
+    """
+    # Sort by author, convert to list
+    documents = sorted(documents, key=lambda d: d[1])
 
-# carregar o vonmon
-rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")
+    labels = []
+    authors = []
+    first_col = 0
 
-# carregar o retorica
-retorica = rpy2.robjects.r(retorica)
+    for (author, group) in itertools.groupby(documents, key=lambda x: x[1]):
+        group = list(group)
 
-# chamar o retorica
-result = retorica(rdtm, rauthors)
+        # Ignore authors with only one document
+        if len(group) < 2:
+            continue
 
-print('Salvando resultados...')
-print('topics.csv...')
+        last = first_col + len(group) - 1
+        first = first_col
 
-# temas relevantes estão salvos na variável `topics$one`
-topics = pandas.rpy.common.convert_robj(result[4])
+        labels.extend([label for (label, _) in group])
+        authors.append((first, last))
 
-topics.index = author_names
-topics.columns = ('tema', 'enfase')
+        first_col = last + 1
 
-topics.to_csv(os.path.join(THIS_DIR, 'topics.csv'), encoding='utf-8')
+    return authors, labels
 
-print('topic_words.csv...')
 
-write_table = rpy2.robjects.r('write.table')
-write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
+def main():
 
-print('Feito!')
+    # TODO FIXME These will probably be replaced by command line args
+    opts_nbuckets = NBUCKETS
+
+    # inicializar o armazenamento
+    storage = PTOFS()
+    storage.list_buckets()
+
+    # All buckets
+    buckets = storage.list_buckets()
+
+    # Filter out buckets which are used for caching
+    buckets = itertools.ifilterfalse(is_stemmed_bucket, buckets)
+
+    # Filter out all buckets that exceed the limit specified by `opts_nbuckets`
+    if opts_nbuckets:
+        buckets = itertools.islice(buckets, 0, opts_nbuckets)
+
+    # Load labels and authors in the format `iter([(label, author), ...])`
+    documents = all_document_labels(storage, buckets)
+
+    # Filter out invalid authors and generate the Authors Matrix required by vonmon
+    authors, labels = vonmon_authors_matrix(documents)
+
+    # Load and prepare the documents
+    def _load_and_prepare_document(label):
+        bucket = label.split(':')[0]
+        return load_and_prepare_document(storage, bucket, label)
+
+    print('Loading documents...')
+
+    #labels = [d[0] for d in documents]
+    prepdocs = itertools.imap(_load_and_prepare_document, labels)
+
+    # Generate the Document Term Matrix
+    dtm = dtm_as_dataframe(prepdocs, labels=labels)
+
+    # Change in place
+    # TODO FIXME We should really drop this in favor of `CountVectorizer`'s
+    # `max_df` and `min_df` paramters
+    cut_frequent_or_infrequent_words(dtm)
+
+    # R matrices are 1-indexed, not 0-indexed, and this is an awesome trick :)
+    authors = pandas.DataFrame(numpy.matrix(authors))
+    authors = authors.radd(1)
+
+    print('Aplicando vonmon a {0} documentos, {1} palavras e {2} autores...'.format(
+        len(dtm.index), len(dtm.columns), len(authors)
+    ))
+
+    return exp_agenda_vonmon(dtm, authors)
+
+if __name__ == '__main__':
+    main()
