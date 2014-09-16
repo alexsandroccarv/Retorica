@@ -51,7 +51,7 @@ class DeputadosController < ApplicationController
     # Para cada um dos deputados
     deputados[0].each do |deputado|
 
-    # # Lendo os parâmetros do JSON
+    # Lendo os parâmetros do JSON
     ide_cadastro = deputado['ide_cadastro']
     id_parlamentar = deputado['id_parlamentar']
     nome_parlamentar = deputado['nome_parlamentar']
@@ -60,6 +60,7 @@ class DeputadosController < ApplicationController
     partido = deputado['partido']
     email = deputado['email']
 
+    # Obtendo a URL da foto
     url_foto = deputado['url_foto']
 
 
