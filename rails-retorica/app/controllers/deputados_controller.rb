@@ -70,7 +70,7 @@ class DeputadosController < ApplicationController
 
 
     deputado_instance = Deputado.find_or_create_by(:_id => ide_cadastro,
-                                                   :id_parlamentar => id_parlamentar,
+                                                   :url_parlamentar => " http://www.camara.leg.br/internet/deputado/Dep_Detalhe.asp?id=#{id_parlamentar}",
                                                    :nome_parlamentar => nome_parlamentar,
                                                    :sexo => sexo,
                                                    :email => email,

@@ -8,7 +8,7 @@ class Deputado
   has_mongoid_attached_file :foto
 
   field :_id, type: String
-  field :id_parlamentar, type: String
+  field :url_parlamentar, type: String
   field :nome_parlamentar, type: String
   field :sexo, type: String
   field :email, type: String
