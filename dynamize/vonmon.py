@@ -37,9 +37,6 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
     """
     rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
-    rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
-    rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
-
     retorica = r'''
     retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
 
@@ -74,6 +71,9 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
 
     # carregar o retorica
     retorica = rpy2.robjects.r(retorica)
+
+    rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
+    rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
 
     # chamar o retorica
     result = retorica(rdtm, rauthors, categories, verbose, kappa)
@@ -174,7 +174,7 @@ def main(argv):
 
     # Generate the Document Term Matrix
 
-    print("Building the DTM...")
+    clint.textui.puts("Building the DTM...")
 
     mindf = max(min(args.mindf, 1.0), 0.0)
     maxdf = max(min(args.maxdf, 1.0), 0.0)
@@ -187,13 +187,15 @@ def main(argv):
 
     authors = build_authors_matrix(authors)
 
-    print('Aplicando vonmon a {0} documentos, {1} termos e {2} autores...'.format(
-        document_count, len(cv.vocabulary_), len(authors),
+    clint.textui.puts(
+        'Aplicando vonmon a {0} documentos, {1} termos e {2} autores...'.format(
+            document_count, len(cv.vocabulary_), len(authors),
     ))
 
-    import pdb; pdb.set_trace()
 
     # XXX FIXME Requires too much memory for a 81k x 74k DTM
+    clint.textui.puts("Transforming DTM...")
+
     dtm = pandas.DataFrame(ft.toarray(), columns=cv.get_feature_names())
 
     return exp_agenda_vonmon(dtm, authors)
