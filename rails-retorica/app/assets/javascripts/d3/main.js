@@ -182,6 +182,7 @@ d3.custom.forceLayout = function (authors) {
             /*fill: function(d,i){return cScale(d.value)},*/
             opacity: .6
         })
+    
 
     topicLabel.append('text')
         .attr({
@@ -221,6 +222,8 @@ d3.custom.forceLayout = function (authors) {
                 .style({
                     'fill': ((d3.rgb(this.firstChild.getAttribute('style'))).brighter(0.4)).toString()
                 })
+            
+        
             if (d.label) return
             var rect = this.getBoundingClientRect()
 
@@ -244,7 +247,7 @@ d3.custom.forceLayout = function (authors) {
 
         })
         .on('mouseout', function(d,i){
-            if (d.fixed) return
+            /*if (d.fixed) return*/
             d3.select(this)
                 .select('.topicCircle')
                 .style({
@@ -258,7 +261,7 @@ d3.custom.forceLayout = function (authors) {
         })
         .on('click', function(d,i){
         
-            this.childNodes[1].addClass('lawl');
+            /*this.childNodes[1].setAttribute('class', 'depG clicked');*/
 
             d3.select('.popover2')
                 .style({
@@ -269,7 +272,7 @@ d3.custom.forceLayout = function (authors) {
                 closeTopics(d,i)
                 return
             }
-            closeTopics(d,i)
+            closeTopics(d,i)            
 
             d3.select('.title')
                 .text(d.topic)
@@ -312,7 +315,7 @@ d3.custom.forceLayout = function (authors) {
                 .style({
                     opacity: 0
                 })
-            sel.selectAll('.depImage')
+            sel.selectAll('.depImage, .depG')
                 .style({
                     display: 'block'
                 })
@@ -337,7 +340,8 @@ d3.custom.forceLayout = function (authors) {
         })
 
     function closeTopics (d,i){
-
+        
+        
         d3.select('.title')
             .text('Retórica')
         d3.select('.description')
@@ -368,7 +372,7 @@ d3.custom.forceLayout = function (authors) {
                 opacity: 1
             })
 
-        sel.selectAll('.depImage')
+        sel.selectAll('.depImage, .depG')
             .transition()
             .style({
                 opacity: 0
@@ -465,11 +469,12 @@ d3.custom.forceLayout = function (authors) {
             .attr({
                 'class': 'depCircleG'
             })
-            .on('mouseenter', function(d2,i){
+            .on('mouseover', function(d2,i){
                 if (!d.fixed) {return}
                 d3.select(this).select('.depCircle')
                     .style({
-                        'stroke-width': 4
+                        'stroke-width': 4,
+                        'stroke': '#05504c'
                     })
 
                 var rect = this.getBoundingClientRect()

@@ -11,6 +11,7 @@
 */
 
 @import 'bootstrap';
+@import 'font-awesome';
 
 $l_color : #97debe;
 $d_bg : #05504c;
@@ -48,7 +49,7 @@ svg {
 }
 
 .depG {
-  /*display: none;*/
+  opacity: 0;
 }
 
 svg {
@@ -104,12 +105,31 @@ svg {
   color: #262626;
 }
 
-.inputContainer {
-  display: none;
-  position: absolute;
-  margin-left: 850px;
-  top: 60px;
-  width: 200px;
+.busca {
+    margin-top: 20px;
+    input {
+        padding: 16px 16px 16px 0px;
+        border-radius: 10px;
+        background-color: transparent;
+        border-top-left-radius: 0px;
+        border-bottom-left-radius: 0px;
+        border-left: 0px;
+        width: 150px;
+        border-color: $l_color;
+    }
+    .input-group-addon {
+        background-color: transparent;
+        border-color: $l_color;
+        color: $l_color;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-top-right-radius: 0px;
+        border-bottom-right-radius: 0px;        
+        border-right: 0px;
+        border-top: 2px solid;
+        border-bottom: 2px solid;
+        border-left: 2px solid;
+    }
 }
 
 .foot {
@@ -124,7 +144,7 @@ svg {
   stroke: white;
   fill-opacity: 1;
   stroke-width: 4px;
-/*  &:hover {
+/*    &:hover {
     fill: white !important;
     fill-opacity: .3;
   }*/
@@ -150,13 +170,19 @@ text {
   opacity: 0;
   pointer-events: none;
   font-size: 10px;
-  color: white;
-  background: black;
+  display: block;
+  color: $d_bg;
+  background: white;
   position: absolute;
-  z-index: 3;
+  z-index: 99;
   padding: 9px;
   left: 20px;
   top: 20px;
+  border: 1px solid #cccccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 .popover .nome, .popover2 .nome {
@@ -167,7 +193,7 @@ text {
 .popover .partido, .popover2 .partido {
   margin-top: 4px;
   text-align: center;
-  color: #d9d9d9;
+  color: lighten( $d_bg, 20% );
 }
 
 .popover .tick, .popover2 .tick {
@@ -178,7 +204,7 @@ text {
   height: 0;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-bottom: 7px solid #000000;
+  border-bottom: 7px solid #fff;
 }
 
 .typeahead, .tt-query, .tt-hint {
