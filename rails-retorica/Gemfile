@@ -37,6 +37,9 @@ gem 'jbuilder', '~> 1.0.1'
 gem 'therubyracer', '0.10.2', :platforms => :ruby
 gem 'better_errors'
 
+#CSV
+gem 'smarter_csv'
+
 group :test do
   gem 'cucumber-rails', :require => false
     # database_cleaner is not required, but highly recommended

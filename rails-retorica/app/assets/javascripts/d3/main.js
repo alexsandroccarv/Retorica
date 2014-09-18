@@ -534,7 +534,7 @@ d3.custom.forceLayout = function (authors) {
                         x:0, y:0,
                         'preserveAspectRatio': 'xMinYMin slice',
                         'xlink:href': function(){
-                            return '/assets/thumb/'+d.foto
+                            return d.foto
                         },
                         'clip-path': function(){
                             return 'url(#c'+ d.id +')'
@@ -653,46 +653,11 @@ queue()
     // .defer(d3.csv, "data/doc_topic_one.csv")
     // .defer(d3.csv, "data/autor_topic_one.csv")
     // .defer(d3.csv, "data/autor_topic_one_enfase.csv")
-    .defer(d3.csv, "autorFinal70.csv")
+    .defer(d3.json, "/deputados.json")
     .await(ready);
 
 
 function ready (error, authorsEnf) {
-    // console.log(autorFinal[0])
-    //docs
-    // var docs = _(docs)
-    //     .map(function(d,i){
-    //         return {
-    //             i:i,
-    //             topic:d.x
-    //         }
-    //     })
-    //     .groupBy('topic')
-    //     .map(function(d,i){
-    //         return {
-    //             topic:i,
-    //             value: d.length
-    //         }
-    //     })
-    //     .value()
-
-    //authors
-    // var authors = _(authors)
-    //     .map(function(d,i){
-    //         return {
-    //             author:i,
-    //             topic:d.x,
-    //             value:1
-    //         }
-    //     })
-    //     .groupBy('topic')
-    //     .map(function(d,i){
-    //         return {
-    //             topic:i,
-    //             children: d
-    //         }
-    //     })
-    //     .value()
 
     //authorsEnf
     var authorsEnf = _(authorsEnf)
@@ -719,34 +684,6 @@ function ready (error, authorsEnf) {
             }
         })
         .value()
-
-    //authorsPerc
-    // var _authorsPerc = []
-    // _.each(authorsPerc, function(author,iAuthor){
-    //     _.each(author, function(topic,iTopic){
-    //         _authorsPerc.push({
-    //             author: iAuthor,
-    //             topic: iTopic,
-    //             value: topic*100
-    //         })
-    //     })
-    // })
-    // var authorsPerc = _(_authorsPerc)
-    //     .filter(function(d,i){return d.value>30})
-    //     .groupBy('topic')
-    //     .map(function(d,i){
-    //         return {
-    //             topic: i,
-    //             children: d
-    //         }
-    //     })
-    //     .value()
-
-    // console.log(authorsEnf[0])
-
-    // console.log(authors)
-    // console.log(_.max(authors, 'topic'))
-    // console.log(_.min(authors, 'topic'))
 
     d3.custom.forceLayout(authorsEnf)
 

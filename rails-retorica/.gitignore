@@ -14,6 +14,9 @@
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
-/public/system/*
+public/system/*
 .idea/*
 ./idea/runConfigurations/*
+.idea/workspace.xml
+.idea/rakeTasks
+

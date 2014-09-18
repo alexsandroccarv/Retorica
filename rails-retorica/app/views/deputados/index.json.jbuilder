@@ -1,8 +1,13 @@
 json.array!(@deputados) do |deputado|
+
   json.id_cadastro deputado._id
-  json.extract! deputado, :url_parlamentar, :nome_parlamentar, :sexo, :email
+  json.autor deputado.nome_parlamentar
+  json.rotulo deputado.enfases.first.tema
+  json.enfase deputado.enfases.first.valor
+  json.uf deputado.unidade_federativa.first.sigla
   json.partido deputado.partidos.first.sigla
-  json.uf deputado.unidade_federativa.sigla
+  json.url deputado.site_deputado
   json.foto deputado.foto.url
-  json.dados_deputado deputado_url(deputado, format: :json)
+  json.email deputado.email
+
 end

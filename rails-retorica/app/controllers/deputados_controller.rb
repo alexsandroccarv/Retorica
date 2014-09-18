@@ -5,7 +5,16 @@ class DeputadosController < ApplicationController
   # GET /deputados
   # GET /deputados.json
   def index
-    @deputados = Deputado.all
+
+   @deputados = []
+  # Colocando Somente os deputados com discursos
+   Deputado.all.each do |deputado|
+
+   if deputado.enfases.exists?
+   @deputados << deputado
+   end
+
+   end
 
     respond_to do |format|
       format.json {}
@@ -47,7 +56,6 @@ class DeputadosController < ApplicationController
     # Obtendo os deputados
     deputados = JsonPath.on(client.call(:obter_deputados).to_hash.to_json, '$..deputado')
 
-
     # Para cada um dos deputados
     deputados[0].each do |deputado|
 
@@ -70,16 +78,33 @@ class DeputadosController < ApplicationController
 
 
     deputado_instance = Deputado.find_or_create_by(:_id => ide_cadastro,
-                                                   :url_parlamentar => " http://www.camara.leg.br/internet/deputado/Dep_Detalhe.asp?id=#{id_parlamentar}",
+                                                   :site_deputado => " http://www.camara.leg.br/internet/deputado/Dep_Detalhe.asp?id=#{id_parlamentar}",
                                                    :nome_parlamentar => nome_parlamentar,
                                                    :sexo => sexo,
-                                                   :email => email,
-                                                   :unidade_federativa => unidade_federativa)
+                                                   :email => email)
 
     deputado_instance.foto = URI.parse(url_foto)
     deputado_instance.save
+    unidade_federativa.deputados << deputado_instance
     partido_atual.deputados << deputado_instance
 
+    obter_enfase(deputado_instance,id_parlamentar)
     end
   end
+
+  def obter_enfase(deputado_instance, id)
+
+    csv = SmarterCSV.process(Rails.public_path+"autorFinal70.csv")
+    authors_id = JsonPath.on(csv.to_json, '$..id')
+    index = authors_id.index(id.to_i)
+
+    unless index.nil?
+      author_csv = csv[index]
+      enfase = Enfase.find_or_create_by(:tema => author_csv[:rotulo], :valor => author_csv[:enfase])
+      deputado_instance.enfases << enfase
+      deputado_instance.save!
+    end
+
+  end
+
 end
