@@ -12,6 +12,11 @@
 
 d3.custom.forceLayout = function (authors) {
 
+    var color_h = "#e9a30d";
+    var color_m = "#6d9c66";
+    var color_s = "#409f89";  
+    
+
     d3.select('.inputContainer')
         .style({
             display: 'block'
@@ -36,10 +41,10 @@ d3.custom.forceLayout = function (authors) {
         console.log('data==>' + data, evt, data)
     })
 
-    var w = 1200,
+    var w = $(window).width(),
         h = 1100,
         topicCircleOpacity = 1,
-        topicCircleSelOpacity = .2
+        topicCircleSelOpacity = 1
 
     var docs = _.map(authors, function(d,i){
         return {
@@ -89,7 +94,7 @@ d3.custom.forceLayout = function (authors) {
             width: w, height: h
         })
         .style({
-            fill: 'white'
+            fill: 'transparent'
         })
 
     //Defs
@@ -136,10 +141,14 @@ d3.custom.forceLayout = function (authors) {
             r: function(d,i){return d.r-2}
         })
         .style({
-            fill: function(d,i){return cScale(d.value)},
-            stroke: function(d,i){
-                return d3.hsl(cScale(d.value)).darker(1.5)
-            }
+            fill: function(d,i){
+              /*return cScale(d.value)*/
+              return colorize(d);
+            },
+/*            stroke: function(d,i){
+                return d3.hsl(cScale(d.value)).darker(0)
+                return "3px solid #fff";
+            }*/
         })
 
     cGroups.append('g')
@@ -170,9 +179,10 @@ d3.custom.forceLayout = function (authors) {
             height: 20
         })
         .style({
-            fill: function(d,i){return cScale(d.value)},
+            /*fill: function(d,i){return cScale(d.value)},*/
             opacity: .6
         })
+    
 
     topicLabel.append('text')
         .attr({
@@ -180,7 +190,7 @@ d3.custom.forceLayout = function (authors) {
             'text-anchor': 'middle'
         })
         .style({
-            fill: 'hsl(0,0%,95%)'
+            fill: '#30524d'
         })
         .text(function(d,i){return d.topic})
 
@@ -198,16 +208,22 @@ d3.custom.forceLayout = function (authors) {
         }
     })
 
+    c_before = "";
+
     cGroups
         .call(drag)
-        .on('mouseenter', function(d,i){
+        .on('mouseover', function(d,i){
+            c_before = d3.select(this).select('.topicCircle').style('fill');
             if (d.fixed) return
             d3.select(this)
                 .select('.topicCircle')
+                /*console.log(this.firstChild.getAttribute('style'));*/
+                /*console.log(((d3.rgb(this.firstChild.getAttribute('style'))).brighter(0.6)).toString());*/
                 .style({
-                    'stroke-width': 2
+                    'fill': ((d3.rgb(this.firstChild.getAttribute('style'))).brighter(0.4)).toString()
                 })
-
+            
+        
             if (d.label) return
             var rect = this.getBoundingClientRect()
 
@@ -230,12 +246,13 @@ d3.custom.forceLayout = function (authors) {
                 })
 
         })
-        .on('mouseleave', function(d,i){
-            if (d.fixed) return
+        .on('mouseout', function(d,i){
+            /*if (d.fixed) return*/
             d3.select(this)
                 .select('.topicCircle')
                 .style({
-                    'stroke-width': 0
+                    /*'stroke-width': 0*/
+                    'fill': c_before
                 })   
             d3.select('.popover2')
                 .style({
@@ -243,6 +260,8 @@ d3.custom.forceLayout = function (authors) {
                 })
         })
         .on('click', function(d,i){
+        
+            /*this.childNodes[1].setAttribute('class', 'depG clicked');*/
 
             d3.select('.popover2')
                 .style({
@@ -253,7 +272,7 @@ d3.custom.forceLayout = function (authors) {
                 closeTopics(d,i)
                 return
             }
-            closeTopics(d,i)
+            closeTopics(d,i)            
 
             d3.select('.title')
                 .text(d.topic)
@@ -270,10 +289,9 @@ d3.custom.forceLayout = function (authors) {
                 .transition()
                 .duration(900)
                 .attrTween('r', rTweenSmall)
-                .style({
+/*                .style({
                     'fill-opacity': topicCircleOpacity,
-                    'stroke-width': 0
-                })
+                })*/
 
             _.each(docs, function(d,i){
                 d.fixed = false
@@ -288,17 +306,16 @@ d3.custom.forceLayout = function (authors) {
                 .transition()
                 .duration(900)
                 .attrTween('r', rTweenBig)
-                .style({
+/*                .style({
                     'fill-opacity': topicCircleSelOpacity,
-                    'stroke-width': 0
-                })
+                })*/
 
             sel.select('.topicLabel')
                 .transition()
                 .style({
                     opacity: 0
                 })
-            sel.selectAll('.depImage')
+            sel.selectAll('.depImage, .depG')
                 .style({
                     display: 'block'
                 })
@@ -318,12 +335,13 @@ d3.custom.forceLayout = function (authors) {
             d: 'M40 96 h300'
         })
         .style({
-            stroke: 'black',
-            'stroke-width': 2
+            stroke: '#97debe',
+            'stroke-width': 1
         })
 
     function closeTopics (d,i){
-
+        
+        
         d3.select('.title')
             .text('Retórica')
         d3.select('.description')
@@ -354,7 +372,7 @@ d3.custom.forceLayout = function (authors) {
                 opacity: 1
             })
 
-        sel.selectAll('.depImage')
+        sel.selectAll('.depImage, .depG')
             .transition()
             .style({
                 opacity: 0
@@ -418,6 +436,7 @@ d3.custom.forceLayout = function (authors) {
 
         while (++i < n) {
             q.visit(collide(docs[i]));
+            tick(docs[i]);
         }
 
         cGroups
@@ -450,11 +469,12 @@ d3.custom.forceLayout = function (authors) {
             .attr({
                 'class': 'depCircleG'
             })
-            .on('mouseenter', function(d2,i){
+            .on('mouseover', function(d2,i){
                 if (!d.fixed) {return}
                 d3.select(this).select('.depCircle')
                     .style({
-                        'stroke-width': 4
+                        'stroke-width': 4,
+                        'stroke': '#05504c'
                     })
 
                 var rect = this.getBoundingClientRect()
@@ -614,6 +634,59 @@ d3.custom.forceLayout = function (authors) {
     function dragstart () {
 
     }
+  
+  
+    function colorize(d) {
+      n = (parseInt(d.r));      
+      if (n >= 50)        
+        return color_h;
+      else if (n < 50 && n >= 30)
+        return color_m;
+      else
+        return color_s;
+    }
+  
+    ax = parseInt($('#triangle').css('border-right-width'));
+    ay = 0;
+    bx = 0;
+    by = -parseInt($('#triangle').css('border-top-width'));
+  
+    console.log();
+  
+    cx = 250;
+    cy = -250;   
+  
+    function distance(ax,ay,bx,by) {
+      return Math.sqrt(Math.pow((ax - bx),2) + Math.pow((ay - by),2));
+    }
+  
+    function is_between(ax,ay,bx,by,x,y) {
+      return (distance(ax,ay,x,y) + distance(x,y,bx,by) == distance(ax,ay,bx,by))
+    }
+    
+    var nx = 0;
+        ny = 0;
+        nn = 0;
+
+    pcx = [] //ponto de colisão x
+    pcy = [] //ponto de colisão y
+  
+    for (nx = 0; nx <= ax; nx++) {
+      for (ny = 0; ny >= by; ny--) {
+        if (is_between(ax,ay,bx,by,nx,ny)) {
+          pcx.push(nx);
+          pcy.push(ny); 
+        }
+      }
+    }   
+    
+    function tick(docs) {
+      if (typeof(pcx[parseInt(docs.y)]) != "undefined"  &&  typeof(pcy[parseInt(docs.x)]) != "undefined") {
+        docs.x  = Math.max(docs.r - 62, Math.min((w - 58) - docs.r, docs.x));
+        docs.y = Math.max(docs.r + 98 - pcy[parseInt(docs.x)], Math.min((h + 102) - docs.r, docs.y));
+      }             
+    }
+  
 
     function collide(node) {
       var r = node.r + 16,

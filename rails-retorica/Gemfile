@@ -33,6 +33,9 @@ gem 'turbolinks'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 1.0.1'
 
+#Google Fonts
+gem  'google-webfonts-rails'
+
 # Development
 gem 'therubyracer', '0.10.2', :platforms => :ruby
 gem 'better_errors'
