@@ -96,6 +96,11 @@ def main(argv):
             except:
                 dt = None
 
+            try:
+                numero = int(sessao.numero)
+            except:
+                numero = sessao.numero
+
             s = {
                 'codigo': unicode(sessao.codigo).strip(),
                 'data': dt,
@@ -141,7 +146,7 @@ def main(argv):
                         if dt:
                             dt = datetime.datetime.strptime(dt, '%d/%m/%Y %H:%M:%S')
 
-                        discurso = {
+                        d = {
                             'wsid': wsid,
                             'sessao': s['codigo'],
                             'fase_sessao': f,
@@ -154,6 +159,7 @@ def main(argv):
                             'sumario': unicode(discurso.sumario.strip()),
                             'conteudo': conteudo,
                         }
+                        database.discursos.insert(d)
         else:
             puts('   Última sessão: {0}'.format(sessao.numero))
             puts('   Último discurso: {0}'.format(discurso.horaInicioDiscurso))
