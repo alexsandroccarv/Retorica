@@ -1,22 +1,38 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import sys
 import json
 import itertools
 import os.path
 from argparse import ArgumentParser
 
-import clint
-import numpy
 import pandas
 import pandas.rpy
 import rpy2.robjects
 from sklearn.feature_extraction.text import CountVectorizer
+from clint.textui import indent, puts, progress, colored
 
-from rinterface import convert_to_r_matrix
 
+# XXX BEHOLD DA' MONKEYPATCH BELOW!!!
+#
+# For whatever reason, `pandas.rpy.common` gives error when looking up for
+# ordinary numpy types from its `VECTOR_TYPES` dict. Like it's looking up for
+# `numpy.int64`, which is in the dict, but it's another instance of
+# `numpy.int64`, so it's `id()` is different. Since I don't know why that is
+# happening nor how to prevent it, I'll simply monkeypatch that dict and make
+# it lookup types by name. It works for us.
 
-THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+class LookupByNameTypeDict(dict):
+    def __init__(self, actual):
+        super(LookupByNameTypeDict, self).__init__((str(t), v) for (t, v) in actual.items())
+
+    def __getitem__(self, key):
+        return super(LookupByNameTypeDict, self).__getitem__(str(key))
+
+pandas.rpy.common.VECTOR_TYPES = LookupByNameTypeDict(pandas.rpy.common.VECTOR_TYPES)
+
+# END OF MONKEYPATCH: We're *safe* now.
 
 
 def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
@@ -28,6 +44,8 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
     :param dtm: the Authors matrix
     :type dtm: rpy2.robjects.vectors.Matrix
     """
+    THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+
     rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
     retorica = r'''
@@ -70,16 +88,16 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
     # call it!
     result = retorica(dtm, authors, categories, verbose, kappa)
 
-    clint.textui.puts('Salvando resultados...')
+    puts('Saving results...')
 
-    with clint.textui.indent(2):
+    with indent(2):
         # XXX FIXME We should probably do this in Python
-        clint.textui.puts('topic_words.csv...')
+        puts('topic_words.csv...')
 
         write_table = rpy2.robjects.r('write.table')
         write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
 
-        clint.textui.puts('topics.csv...')
+        puts('topics.csv...')
 
         # temas relevantes estão salvos na variável `topics$one`
         #topics = pandas.rpy.common.convert_robj(result[4])
@@ -147,26 +165,14 @@ class Collector(list):
         return item
 
 
-class ProxiedBar(object):
-    def __init__(self, it, *args, **kwargs):
-        self._it = it
-        self._bar = clint.textui.progress.bar(self._it, *args, **kwargs)
-
-    def __iter__(self):
-        for i in self._bar:
-            yield i
-
-    def __getattr__(self, name):
-        return getattr(self._it, name)
-
-
 def main(argv):
-    parser = ArgumentParser(prog='stemmer')
+
+    parser = ArgumentParser()
+
     parser.add_argument('--mindf', type=float, default=1.0,
                         help='Minimum document frequency for cuts')
     parser.add_argument('--maxdf', type=float, default=1.0,
                         help='Maximum document frequency for cuts')
-
     parser.add_argument('docsfile', type=unicode)
 
     args = parser.parse_args(argv[1:])
@@ -180,7 +186,7 @@ def main(argv):
 
     documents = DocumentsFile.open(args.docsfile)
 
-    documents = clint.textui.progress.bar(documents)
+    documents = progress.bar(documents)
 
     def collect_author(item):
         author, document = item
@@ -191,37 +197,18 @@ def main(argv):
     corpus = itertools.imap(authors.collect, documents)
 
     # Generate the Document Term Matrix
-    clint.textui.puts("Building the DTM...")
+    puts("Building the DTM...")
 
     cv = CountVectorizer(min_df=args.mindf, max_df=args.maxdf)
     dtm = cv.fit_transform(corpus)
 
-    # Dense is faster!
-    #dtm = dtm.todense()
-    dtm = pandas.DataFrame(dtm.toarray(), columns=cv.get_feature_names())
-
     authors = build_authors_matrix(authors)
 
-    clint.textui.puts("DTM has {0} documents and {1} terms:".format(
+    puts("DTM has {0} documents and {1} terms:".format(
         dtm.shape[0], dtm.shape[1],
     ))
-    
-    clint.textui.puts("")
-    
-    #wordfreq = pd.DataFrame({'topics': cv.get_feature_names(), 'occurrences': numpy.asarray(dtm.sum(axis=0)).ravel()})
-    #wordfreq.sort('occurrences', ascending=False, inplace=True)
 
-    #print(wordfreq)
-    
-    #clint.textui.puts("")
-    #clint.textui.puts('')
-    #import sys; sys.exit(1)
-
-    # Sum 1, as explained above
-    #for a in authors.index:
-    #    print(a.encode('utf-8'))
-
-    authors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
+    puts("")
 
     # Now we prepare our data for `exp.agenda.vonmon`
     # 1) Convert the DTM to a R matrix
@@ -229,28 +216,17 @@ def main(argv):
     #    exp.agenda.vonmon uses 1-indexing, while the matrix is currently
     #    0-indexed)
 
-    clint.textui.puts("Preparing the DTM...")
+    puts("Preparing the DTM...")
 
-    #dtm = ProxiedBar(dtm, expected_size=dtm.shape[0])
-
-    class MyDict(dict):
-        def __init__(self, actual):
-            super(MyDict, self).__init__((str(t), v) for (t, v) in actual.items())
-
-        def __getitem__(self, key):
-            return super(MyDict, self).__getitem__(str(key))
-
-    pandas.rpy.common.VECTOR_TYPES = MyDict(pandas.rpy.common.VECTOR_TYPES)
-
+    dtm = pandas.DataFrame(dtm.toarray(), columns=cv.get_feature_names())
     dtm = pandas.rpy.common.convert_to_r_matrix(dtm)
 
-    dtm.colnames = rpy2.robjects.StrVector(cv.get_feature_names())
+    authors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
 
-    clint.textui.puts("Calling exp.agenda.vonmon through rpy2...")
+    puts("Calling exp.agenda.vonmon through rpy2...")
 
-    return exp_agenda_vonmon(dtm, authors, verbose=True)
+    exp_agenda_vonmon(dtm, authors, verbose=True)
 
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv)
+    sys.exit(main(sys.argv) or 0)
