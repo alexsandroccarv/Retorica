@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 
 import clint
 import numpy
+import pandas
+import pandas.rpy
 import rpy2.robjects
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -96,6 +98,7 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
 def build_authors_matrix(authors):
     start = 0
 
+    names = []
     matrix = []
 
     while authors:
@@ -104,10 +107,12 @@ def build_authors_matrix(authors):
 
         matrix.append((start, start + count - 1))
 
+        names.append(cur)
+
         start += count
         authors = authors[count:]
 
-    return numpy.matrix(matrix)
+    return pandas.DataFrame(matrix, index=names)
 
 
 class DocumentsFile(object):
@@ -191,13 +196,32 @@ def main(argv):
     cv = CountVectorizer(min_df=args.mindf, max_df=args.maxdf)
     dtm = cv.fit_transform(corpus)
 
+    # Dense is faster!
+    #dtm = dtm.todense()
+    dtm = pandas.DataFrame(dtm.toarray(), columns=cv.get_feature_names())
+
     authors = build_authors_matrix(authors)
 
-    clint.textui.puts("DTM has {0} documents and {1} terms".format(
+    clint.textui.puts("DTM has {0} documents and {1} terms:".format(
         dtm.shape[0], dtm.shape[1],
     ))
+    
+    clint.textui.puts("")
+    
+    #wordfreq = pd.DataFrame({'topics': cv.get_feature_names(), 'occurrences': numpy.asarray(dtm.sum(axis=0)).ravel()})
+    #wordfreq.sort('occurrences', ascending=False, inplace=True)
 
-    clint.textui.puts('')
+    #print(wordfreq)
+    
+    #clint.textui.puts("")
+    #clint.textui.puts('')
+    #import sys; sys.exit(1)
+
+    # Sum 1, as explained above
+    #for a in authors.index:
+    #    print(a.encode('utf-8'))
+
+    authors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
 
     # Now we prepare our data for `exp.agenda.vonmon`
     # 1) Convert the DTM to a R matrix
@@ -207,18 +231,24 @@ def main(argv):
 
     clint.textui.puts("Preparing the DTM...")
 
-    dtm = ProxiedBar(dtm, expected_size=dtm.shape[0])
+    #dtm = ProxiedBar(dtm, expected_size=dtm.shape[0])
 
-    dtm = convert_to_r_matrix(dtm)
+    class MyDict(dict):
+        def __init__(self, actual):
+            super(MyDict, self).__init__((str(t), v) for (t, v) in actual.items())
+
+        def __getitem__(self, key):
+            return super(MyDict, self).__getitem__(str(key))
+
+    pandas.rpy.common.VECTOR_TYPES = MyDict(pandas.rpy.common.VECTOR_TYPES)
+
+    dtm = pandas.rpy.common.convert_to_r_matrix(dtm)
 
     dtm.colnames = rpy2.robjects.StrVector(cv.get_feature_names())
 
-    # Sum 1, as explained above
-    authors = convert_to_r_matrix(authors + 1)
-
     clint.textui.puts("Calling exp.agenda.vonmon through rpy2...")
 
-    return exp_agenda_vonmon(dtm, authors)
+    return exp_agenda_vonmon(dtm, authors, verbose=True)
 
 
 if __name__ == '__main__':

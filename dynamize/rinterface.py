@@ -29,6 +29,12 @@ NA_TYPES = {
     numpy.bool: robj.NA_Logical,
 }
 
+_VECTOR_TYPES_BY_NAME = dict((str(t), v) for (t, v) in VECTOR_TYPES.items())
+
+
+def _fix_get_vector_type(t):
+    return _VECTOR_TYPES_BY_NAME[str(t)]
+
 
 def convert_to_r_posixct(value):
     """Should convert `numpy.datetime64` objects to R dates, but since
@@ -59,17 +65,23 @@ def convert_to_r_matrix(matrix):
     It works by iterating and converting the given *matrix* row by row.
     """
     rbind = robj.baseenv.get('rbind')
+
+    #robj.r('library("Matrix")')
+    #robj.r('library("glmnet")')
+    #rmatrix = robj.r('Matrix(NA, 0, {0})'.format(matrix.shape[1]))
     rmatrix = robj.r('matrix(NA, 0, {0})'.format(matrix.shape[1]))
 
     for row in matrix:
+    #if True:
+        #row = matrix
 
         # FIXME I'm so stupid I don't know how to create a matrix of
         # arrays. All matrices I create with `numpy` are matrices of matrices.
         # Damn.
-        if isinstance(row, numpy.matrix):
-            value = row.A
-        else:
+        if hasattr(row, 'toarray'):
             value = row.toarray()
+        else:
+            value = row.A
 
         value = value.ravel()
         value_type = value.dtype.type
@@ -85,7 +97,13 @@ def convert_to_r_matrix(matrix):
                 for item in value
             ]
 
-            value = VECTOR_TYPES[value_type](value)
+            # FIXME XXX Fuck this. At this point for god only knows what
+            # reason, `value_type` will NOT BE IN THE VECTOR_TYPE keys! Even
+            # if its the same type, say, numpy.int64, it'll be an numpy.int64
+            # whose id() is different from the version imported from numpy.
+            # FUCK THIS.
+            #value = VECTOR_TYPES[value_type](value)
+            value = _fix_get_vector_type(value_type)(value)
 
         rmatrix = rbind(rmatrix, value)
 

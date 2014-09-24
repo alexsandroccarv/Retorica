@@ -2,10 +2,12 @@
 from __future__ import unicode_literals
 
 import re
+import iso8601
 import os
 import json
 import unicodedata
 import itertools
+import datetime
 
 from argparse import ArgumentParser
 
@@ -119,7 +121,7 @@ def document_generator(storage, documents_by_author):
             yield (author, document)
 
 
-def load_documents_from_storage(nbuckets=0):
+def load_documents_from_storage(nbuckets=0, initial_term=None, final_term=None):
     # inicializar o armazenamento
     storage = PTOFS()
     storage.list_buckets()
@@ -140,7 +142,16 @@ def load_documents_from_storage(nbuckets=0):
 
     for bucket in buckets:
         for label in storage.list_labels(bucket):
-            author = storage.get_metadata(bucket, label).get('orador')
+            md = storage.get_metadata(bucket, label)
+            try:
+                date = iso8601.parse_date(md.get('proferido_em'))
+            except:
+                continue
+            if initial_term and date.replace(tzinfo=None) < initial_term:
+                continue
+            if final_term and date.replace(tzinfo=None) < final_term:
+                continue
+            author = md.get('orador')
             document_count += 1
             documents_by_author.setdefault(author, []).append((bucket, label))
 
@@ -149,19 +160,31 @@ def load_documents_from_storage(nbuckets=0):
     return documents, document_count
 
 
+def mkdate(s):
+    try:
+        return datetime.datetime.strptime(s, '%Y-%m-%d')
+    except Exception, e:
+        clint.textui.puts("Could not parse date `" + s + "'. Apparently not in the format Y-m-d: " + unicode(e))
+        sys.exit(1)
+
+
 def main(argv):
     parser = ArgumentParser(prog='stemmer')
-    parser.add_argument('--nbuckets', type=int, default=0,
+    parser.add_argument('--nbuckets', type=int, d efault=0,
                         help=('the number of buckets you want to process'))
+    parser.add_argument('--initial-term', type=mkdate, default=None,
+                        help=('ignore all documents previously to this date (in the Y-m-d format)'))
+    parser.add_argument('--final-term', type=mkdate, default=None,
+                        help=('ignore all documents after this date (in the Y-m-d format)'))
     parser.add_argument('outfile', type=unicode)
 
     args = parser.parse_args(argv[1:])
 
     outfile = os.path.expanduser(os.path.expandvars(args.outfile))
 
-    print("Processing documents...")
+    clint.textui.puts("Processing documents...")
 
-    documents, document_count = load_documents_from_storage(args.nbuckets)
+    documents, document_count = load_documents_from_storage(args.nbuckets, args.initial_term, args.final_term)
 
     documents = clint.textui.progress.bar(documents, expected_size=document_count)
 
