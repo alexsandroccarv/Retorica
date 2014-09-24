@@ -5,6 +5,7 @@ import sys
 import json
 import itertools
 import os.path
+import datetime
 from argparse import ArgumentParser
 
 import pandas
@@ -35,7 +36,13 @@ pandas.rpy.common.VECTOR_TYPES = LookupByNameTypeDict(pandas.rpy.common.VECTOR_T
 # END OF MONKEYPATCH: We're *safe* now.
 
 
-def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
+def shortnow(now=None):
+    if now is None:
+        now = datetime.datetime.now()
+    return now.strftime(r'%Y%m%d%H%M%S')
+
+
+def exp_agenda_vonmon(dtm, authors, ncats=70, verbose=False, kappa=400):
     """
     Call `exp.agenda.vonmon` through `rpy2`'s R interface.
 
@@ -48,69 +55,21 @@ def exp_agenda_vonmon(dtm, authors, categories=70, verbose=False, kappa=400):
 
     rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
-    retorica = r'''
-    retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
-
-    save("dtm", file="dtm.RData")
-
-    topics <- exp.agenda.vonmon(term.doc = dtm, authors = autorMatrix,
-                                n.cats = ncats, verbose = verbose, kappa = kappa)
-
-    # Definindo topicos de cada autor e arquivo final
-    autorTopicOne <- NULL
-    for (i in 1:dim(topics[[1]])[1]) {
-        autorTopicOne[i] <- which.max(topics[[1]][i,])
-    }
-
-    # compute the proportion of documents from each author to each topic
-    autorTopicPerc <- prop.table(topics[[1]], 1)
-
-    autorTopicOne <- as.data.frame(autorTopicOne)
-
-    for (i in 1:nrow(autorTopicOne)) {
-        autorTopicOne$enfase[i] <- autorTopicPerc[i,which.max(autorTopicPerc[i,])]
-    }
-
-    topics$one <- autorTopicOne
-
-    save("topics", file="topics.RData");
-
-    return(topics)
-    }
-    '''
-
-    # load `exp.agenda.vonmon` into the rpy2 environment
+    # Load `exp.agenda.vonmon` into the rpy2 environment
     rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")
 
-    # load our glue code into the environment
-    retorica = rpy2.robjects.r(retorica)
+    exp_agenda_vonmon = rpy2.robjects.r('exp.agenda.vonmon')
 
-    # call it!
-    result = retorica(dtm, authors, categories, verbose, kappa)
+    # Call it
+    topics = exp_agenda_vonmon(term_doc=dtm, authors=authors, n_cats=ncats,
+                               verbose=verbose, kappa=kappa)
 
     puts('Saving results...')
 
-    with indent(2):
-        # XXX FIXME We should probably do this in Python
-        puts('topic_words.csv...')
+    rsave_rds = rpy2.robjects.r('saveRDS')
+    rsave_rds(topics, file='topics_{0}.Rda'.format(shortnow()))
 
-        write_table = rpy2.robjects.r('write.table')
-        write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
-
-        puts('topics.csv...')
-
-        # temas relevantes estão salvos na variável `topics$one`
-        #topics = pandas.rpy.common.convert_robj(result[4])
-        write_table(result[4], file='topics.csv', sep=',', row_names=True)
-
-        # XXX FIXME We should really find a way to fill this in with
-        # the names of the author
-        #topics.index = author_names
-        #topics.columns = ('tema', 'enfase')
-
-        #topics.to_csv(os.path.join(THIS_DIR, 'topics.csv'), encoding='utf-8')
-
-    return result
+    return pandas.rpy.common.convert_robj(topics)
 
 
 def build_authors_matrix(authors):
@@ -194,6 +153,8 @@ def main(argv):
                         help='Minimum document frequency for cuts')
     parser.add_argument('--maxdf', type=float, default=1.0,
                         help='Maximum document frequency for cuts')
+    parser.add_argument('--ncats', type=int, default=70,
+                        help='Number of categories in the generated matrix')
     parser.add_argument('docsfile', type=unicode)
 
     args = parser.parse_args(argv[1:])
@@ -248,7 +209,10 @@ def main(argv):
 
     puts("Calling exp.agenda.vonmon through rpy2...")
 
-    exp_agenda_vonmon(dtm, authors, verbose=True)
+    topics = exp_agenda_vonmon(dtm, authors, ncats=args.ncats, verbose=True)
+
+    for key in topics.keys():
+        topics[key].to_csv('topics_{0}_{1}.csv'.format(key, shortnow()), encoding='utf-8')
 
 
 if __name__ == '__main__':
