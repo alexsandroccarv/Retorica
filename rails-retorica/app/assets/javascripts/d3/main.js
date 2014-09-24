@@ -16,6 +16,9 @@ d3.custom.forceLayout = function (authors) {
     var color_m = "#6d9c66";
     var color_s = "#409f89";  
     
+    /*loading = d3.select('body').append('div')
+        .attr('class','loading')*/
+    
 
     d3.select('.inputContainer')
         .style({
@@ -150,6 +153,7 @@ d3.custom.forceLayout = function (authors) {
                 return "3px solid #fff";
             }*/
         })
+    
 
     cGroups.append('g')
         .attr({
@@ -159,8 +163,18 @@ d3.custom.forceLayout = function (authors) {
             }
         })
         .each(drawDep)
+    
+    var fo = cGroups.append('foreignObject')
+        .attr({
+            x: function(d,i){return -d.r+5},
+            y: 0,
+            width: function(d,i){return d.r*2-10},
+            height: function(d,i){return d.r*2-10}
+        })
 
-    var topicLabel = cGroups.append('g')
+    
+
+    var topicLabel = fo.append('xhtml:div')
         .attr('class', 'topicLabel')
         .attr({
             'pointer-events': 'none'
@@ -170,8 +184,10 @@ d3.custom.forceLayout = function (authors) {
         //         return d.r < 30 ? 'none' : 'block'
         //     }
         // })
+    
+    /*topicLabel.insertBefore('<switch>')*/
 
-    topicLabel.append('rect')
+    /*topicLabel.append('rect')
         .attr({
             x: function(d,i){return -d.r+5},
             y: -10,
@@ -180,33 +196,48 @@ d3.custom.forceLayout = function (authors) {
         })
         .style({
             /*fill: function(d,i){return cScale(d.value)},*/
-            opacity: .6
-        })
+            /*opacity: .6
+        })*/
     
-
-    topicLabel.append('text')
+    var text = topicLabel.append('xhtml:div')
+        .text(function(d,i){
+            return d.topic;
+        })
         .attr({
-            x:0, y:0, dy: '.35em',
+            width: 'auto',
+            height: 'auto'
+        })            
+        .attr({
+            /*x:-30, y:0, dy: '.35em',*/
             'text-anchor': 'middle'
         })
-        .style({
-            fill: '#30524d'
+        .style({fill: '#30524d'})
+        .style('font-size', function(d,i){ 
+            return String(d.r/4)+'px';
         })
-        .text(function(d,i){return d.topic})
+
+    
 
     topicLabel.style({
-        display: function(d,i){
-            var rect = d3.select(this).select('text').node().getBoundingClientRect()
+        display: function(d,i){    
+            var rect = d3.select(this).select('div').node().getBoundingClientRect()
             if (d.r*2 < rect.width + 10) {
                 d.label = false
-                return 'none'
+                /*return 'none'*/
             } else {
                 d.label = true
-                return 'block'
+                /*return 'block'*/
             }
-
         }
     })
+    
+    fo.each(function(d,i) {
+        var rect = d3.select(this).select('div').node().getBoundingClientRect()
+        var height = String(-(rect.height/2));
+        this.setAttribute('y', height);
+    })
+    
+    /*fo.attr('y', '-50')*/
 
     c_before = "";
 
@@ -731,6 +762,11 @@ queue()
 
 
 function ready (error, authorsEnf) {
+    d3.select('.loading').transition()
+        .duration(1000)
+        .style('opacity','0')
+        .delay(2000)
+        .remove()
     // console.log(autorFinal[0])
     //docs
     // var docs = _(docs)
