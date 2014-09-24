@@ -28,6 +28,9 @@ def main(argv):
                         help=('ignore all documents previously to this date (in the Y-m-d format)'))
     parser.add_argument('--final-term', type=mkdate, default=None,
                         help=('ignore all documents after this date (in the Y-m-d format)'))
+    parser.add_argument('--phases', type=unicode, default='*',
+                        help=('Fases da sessão, separadas por vírgula: '
+                              'PE,BC,AB,OD,HO,CG,GE. * para todos.'))
 
     parser.add_argument('outfile', type=argparse.FileType(mode='w'))
 
@@ -39,6 +42,10 @@ def main(argv):
     lookup = {
         'conteudo_stemmed': {'$exists': True},
     }
+
+    if args.phases and args.phases != '*':
+        phases = [p.strip() for p in args.phases.split(',')]
+        lookup['fase_sessao.codigo'] = {'$in': phases}
 
     dt_lookup = {}
 

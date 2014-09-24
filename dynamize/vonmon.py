@@ -165,6 +165,27 @@ class Collector(list):
         return item
 
 
+def eliminate_authors_with_only_one_speech(docs):
+    cur = None
+    prevdoc = None
+    doccount = False
+
+    #puts(str(len(next(docs))))
+    #sys.exit(1)
+
+    for author, doc in docs:
+        if author != cur:
+            cur = author
+            prevdoc = doc
+            doccount = False
+        elif not doccount:
+            yield author, prevdoc
+            yield author, doc
+            doccount = True
+        else:
+            yield author, doc
+
+
 def main(argv):
 
     parser = ArgumentParser()
@@ -187,6 +208,8 @@ def main(argv):
     documents = DocumentsFile.open(args.docsfile)
 
     documents = progress.bar(documents)
+
+    documents = eliminate_authors_with_only_one_speech(documents)
 
     def collect_author(item):
         author, document = item
