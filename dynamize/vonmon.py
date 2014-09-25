@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 
 import sys
 import json
-import itertools
 import os.path
+import numpy
+import argparse
 import datetime
-from argparse import ArgumentParser
+import itertools
 
 import pandas
 import pandas.rpy
@@ -59,8 +60,8 @@ def exp_agenda_vonmon(dtm, authors, ncats=70, verbose=False, kappa=400):
     #    exp.agenda.vonmon uses 1-indexing, while the matrix is currently
     #    0-indexed)
 
-    rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
-    rauthors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
+    dtm = pandas.rpy.common.convert_to_r_matrix(dtm)
+    authors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
 
     rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
@@ -154,9 +155,27 @@ def eliminate_authors_with_only_one_speech(docs):
             yield author, doc
 
 
+def mkdirp(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if not (exc.errno == errno.EEXIST and os.path.isdir(path)):
+            raise
+
+
+class WriteableDir(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        prospective_dir = values
+
+        try:
+            mkdirp(prospective_dir)
+        except OSError as e:
+            raise argparse.ArgumentError(prospective_dir, e.message)
+
+
 def main(argv):
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('--mindf', type=float, default=1.0,
                         help='Minimum document frequency for cuts')
@@ -164,6 +183,10 @@ def main(argv):
                         help='Maximum document frequency for cuts')
     parser.add_argument('--ncats', type=int, default=70,
                         help='Number of categories in the generated matrix')
+    parser.add_argument('-o', '--output_directory', action=WriteableDir,
+                        default=None, help=('Directory where the output data will be saved. '
+                                            'If it doesnt exist well create it. '
+                                            'Defaults to ./vonmon/<rightnow>.'))
     parser.add_argument('docsfile', type=unicode)
 
     args = parser.parse_args(argv[1:])
@@ -174,6 +197,19 @@ def main(argv):
 
     if args.maxdf == 1.0:
         args.maxdf = 1
+
+    # Create dirs right now to avoid problems later!
+    output_folder = args.output_directory
+    if not output_folder:
+        output_folder = os.path.abspath(os.path.join(
+            os.getcwd(), 'vonmon',
+            datetime.datetime.now().strftime('%Y-%m-%d_%H%M')))
+
+    # Make sure it exists!
+    mkdirp(output_folder)
+
+    def outputpath(*args):
+        return os.path.abspath(os.path.join(output_folder, *args))
 
     documents = DocumentsFile.open(args.docsfile)
 
@@ -211,17 +247,41 @@ def main(argv):
 
     topics = exp_agenda_vonmon(dtm, authors, ncats=args.ncats, verbose=True)
 
-    snow = shortnow()
+    topics['thetas'].index = authors.icol(0)
 
     for key in topics.keys():
-        if key == 'thetas':
-            continue
-        topics[key].to_csv('topics_{0}_{1}.csv'.format(key, snow), encoding='utf-8')
+        filename = outputpath('{0}.csv'.format(key))
+        topics[key].to_csv(filename, encoding='utf-8')
 
     thetas = topics['thetas']
-    thetas.index = authors.icol(0)
+    author_topics = thetas.idxmax(axis=1)
 
-    authors.to_csv('topics_thetas_{0}.csv'.format(snow), encoding='utf-8'))
+    # Create a proportion table with the results
+    t = []
+    for i in range(thetas.shape[1]):
+        row = thetas.irow(i)
+        t.append(row / numpy.sum(row))
+
+    propthetas = pandas.DataFrame(t)
+
+    result = []
+    for i, topic_idx in enumerate(propthetas.idxmax(axis=1)):
+        row = propthetas.irow(i)
+        enfase = row[topic_idx]
+        result.append((topic_idx, enfase))
+
+    result = pandas.DataFrame(result, index=propthetas.index)
+    result.to_csv(outputpath('result.csv'), encoding='utf-8')
+
+    mus = topics['mus']
+
+    topicwords = []
+    for i in range(mus.shape[1]):
+        words = mus.icol(i).sort(ascending=False, inplace=False)
+        topicwords.append([w for (w, e) in words[:30].iteritems()])
+
+    words = pandas.DataFrame(topicwords)
+    words.to_csv(outputpath('words.csv'), header=False, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':
