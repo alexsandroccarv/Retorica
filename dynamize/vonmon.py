@@ -47,11 +47,20 @@ def exp_agenda_vonmon(dtm, authors, ncats=70, verbose=False, kappa=400):
     Call `exp.agenda.vonmon` through `rpy2`'s R interface.
 
     :param dtm: the Document Term Matrix
-    :type dtm: rpy2.robjects.vectors.Matrix
-    :param dtm: the Authors matrix
-    :type dtm: rpy2.robjects.vectors.Matrix
+    :type dtm: pandas.DataFrame
+    :param authors: the Authors matrix
+    :type authors: pandas.DataFrame
     """
     THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+
+    # Now we prepare our data for `exp.agenda.vonmon`
+    # 1) Convert the DTM to a R matrix
+    # 2) Convert the authors matrix to a R matrix and sum it with 1 (because
+    #    exp.agenda.vonmon uses 1-indexing, while the matrix is currently
+    #    0-indexed)
+
+    rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
+    rauthors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
 
     rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
 
@@ -188,31 +197,31 @@ def main(argv):
 
     authors = build_authors_matrix(authors)
 
+    authors.to_csv('authors_{0}.csv'.format(shortnow()), encoding='utf-8')
+
     puts("DTM has {0} documents and {1} terms:".format(
         dtm.shape[0], dtm.shape[1],
     ))
 
     puts("")
 
-    # Now we prepare our data for `exp.agenda.vonmon`
-    # 1) Convert the DTM to a R matrix
-    # 2) Convert the authors matrix to a R matrix and sum it with 1 (because
-    #    exp.agenda.vonmon uses 1-indexing, while the matrix is currently
-    #    0-indexed)
-
-    puts("Preparing the DTM...")
-
     dtm = pandas.DataFrame(dtm.toarray(), columns=cv.get_feature_names())
-    dtm = pandas.rpy.common.convert_to_r_matrix(dtm)
-
-    authors = pandas.rpy.common.convert_to_r_matrix(authors.radd(1))
 
     puts("Calling exp.agenda.vonmon through rpy2...")
 
     topics = exp_agenda_vonmon(dtm, authors, ncats=args.ncats, verbose=True)
 
+    snow = shortnow()
+
     for key in topics.keys():
-        topics[key].to_csv('topics_{0}_{1}.csv'.format(key, shortnow()), encoding='utf-8')
+        if key == 'thetas':
+            continue
+        topics[key].to_csv('topics_{0}_{1}.csv'.format(key, snow), encoding='utf-8')
+
+    thetas = topics['thetas']
+    thetas.index = authors.icol(0)
+
+    authors.to_csv('topics_thetas_{0}.csv'.format(snow), encoding='utf-8'))
 
 
 if __name__ == '__main__':
