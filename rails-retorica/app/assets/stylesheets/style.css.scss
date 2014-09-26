@@ -196,6 +196,11 @@ text {
   color: lighten( $d_bg, 20% );
 }
 
+.alert{
+  position: relative;
+  z-index: 999999999999999;
+}
+
 .popover .tick, .popover2 .tick {
   position: absolute;
   left: 90px;

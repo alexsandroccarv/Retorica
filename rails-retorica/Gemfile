@@ -26,7 +26,7 @@ gem 'jquery-rails'
 gem 'jsonpath'
 
 #Thin WebClient
-gem 'thin'
+#gem 'thin'
 # Turbolinks makes following links in your web application faster. Read more: https://github.com/rails/turbolinks
 gem 'turbolinks'
 
@@ -54,7 +54,12 @@ end
 gem "mongoid-paperclip", :require => "mongoid_paperclip"
 gem 'aws-sdk', '~> 1.3.4'
 
+# Zip
+gem 'rubyzip', '>= 1.0.0' # will load new rubyzip version
+gem 'zip-zip' # will load compatibility for old rubyzip API.r
 
+# XML
+gem 'nokogiri'
 
 
 # To use ActiveModel has_secure_password
@@ -67,6 +72,7 @@ gem 'aws-sdk', '~> 1.3.4'
 # gem 'capistrano', group: :development
 
 # To use debugger
-# gem 'debugger'
+#gem 'debugger'
 
+gem 'byebug'
 
