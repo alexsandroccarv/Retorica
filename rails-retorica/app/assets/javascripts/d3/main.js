@@ -34,15 +34,7 @@ d3.custom.forceLayout = function (authors) {
                 inputData.push(d.author)
             }
         })
-    })
-
-    var typeahead = $('input').typeahead({
-      name: 'deputados',
-      local: inputData
-    })
-    typeahead.on('typeahead:selected',function(evt,data){
-        console.log('data==>' + data, evt, data)
-    })
+    })   
 
     var w = $(window).width(),
         h = 1100,
@@ -215,8 +207,11 @@ d3.custom.forceLayout = function (authors) {
         .style('font-size', function(d,i){ 
             return String(d.r/4)+'px';
         })
-
     
+    var typeahead = $('input').typeahead({
+      name: 'deputados',
+      local: inputData
+    })   
 
     topicLabel.style({
         display: function(d,i){    
@@ -498,7 +493,8 @@ d3.custom.forceLayout = function (authors) {
             
         var depCircleG_enter = depCircleG.enter().append('g')
             .attr({
-                'class': 'depCircleG'
+                'class': 'depCircleG',
+                'data-nome': function(d2,i) { return d2.author }
             })
             .on('mouseover', function(d2,i){
                 if (!d.fixed) {return}
@@ -665,6 +661,15 @@ d3.custom.forceLayout = function (authors) {
     function dragstart () {
 
     }
+    
+    typeahead.on('typeahead:selected',function(e,data){
+        cGroups.each(function(d,i) {            
+            d3.select(this).selectAll('.depCircleG').each(function(){
+                if(this.getAttribute('data-nome') == data.value)
+                    console.log(this.parentElement.parentElement);
+            });
+        })
+    })
   
   
     function colorize(d) {
@@ -699,8 +704,8 @@ d3.custom.forceLayout = function (authors) {
         ny = 0;
         nn = 0;
 
-    pcx = [] //ponto de colisão x
-    pcy = [] //ponto de colisão y
+    pcx = [] //pontos de colisão x
+    pcy = [] //pontos de colisão y
   
     for (nx = 0; nx <= ax; nx++) {
       for (ny = 0; ny >= by; ny--) {
