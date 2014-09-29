@@ -672,7 +672,7 @@ d3.custom.forceLayout = function (authors) {
         cGroups.each(function(d,i) {            
             d3.select(this).selectAll('.depCircleG').each(function(){
                 if(this.getAttribute('data-nome') == data.value)
-                    console.log(this.parentElement.parentElement);
+                    $(this.parentElement.parentElement).d3Click();
             });
         })
     })
@@ -728,6 +728,15 @@ d3.custom.forceLayout = function (authors) {
         docs.y = Math.max(docs.r + 98 - pcy[parseInt(docs.x)], Math.min((h + 102) - docs.r, docs.y));
       }             
     }
+        
+    jQuery.fn.d3Click = function () {
+      this.each(function (i, e) {
+        var evt = document.createEvent("MouseEvents");
+        evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+
+        e.dispatchEvent(evt);
+      });
+    };
   
 
     function collide(node) {
