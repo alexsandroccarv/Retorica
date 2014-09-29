@@ -247,7 +247,7 @@ def main(argv):
 
     topics = exp_agenda_vonmon(dtm, authors, ncats=args.ncats, verbose=True)
 
-    topics['thetas'].index = authors.icol(0)
+    topics['thetas'].index = authors.index
 
     for key in topics.keys():
         filename = outputpath('{0}.csv'.format(key))
@@ -258,11 +258,11 @@ def main(argv):
 
     # Create a proportion table with the results
     t = []
-    for i in range(thetas.shape[1]):
+    for i in range(thetas.shape[0]):
         row = thetas.irow(i)
         t.append(row / numpy.sum(row))
 
-    propthetas = pandas.DataFrame(t)
+    propthetas = pandas.DataFrame(t, index=thetas.index)
 
     result = []
     for i, topic_idx in enumerate(propthetas.idxmax(axis=1)):
