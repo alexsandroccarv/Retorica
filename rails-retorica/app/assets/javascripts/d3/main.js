@@ -16,6 +16,9 @@ d3.custom.forceLayout = function (authors) {
     var color_m = "#6d9c66";
     var color_s = "#409f89";  
     
+    /*loading = d3.select('body').append('div')
+        .attr('class','loading')*/
+    
 
     d3.select('.inputContainer')
         .style({
@@ -31,15 +34,7 @@ d3.custom.forceLayout = function (authors) {
                 inputData.push(d.author)
             }
         })
-    })
-
-    var typeahead = $('input').typeahead({
-      name: 'deputados',
-      local: inputData
-    })
-    typeahead.on('typeahead:selected',function(evt,data){
-        console.log('data==>' + data, evt, data)
-    })
+    })   
 
     var w = $(window).width(),
         h = 1100,
@@ -150,6 +145,7 @@ d3.custom.forceLayout = function (authors) {
                 return "3px solid #fff";
             }*/
         })
+    
 
     cGroups.append('g')
         .attr({
@@ -159,8 +155,18 @@ d3.custom.forceLayout = function (authors) {
             }
         })
         .each(drawDep)
+    
+    var fo = cGroups.append('foreignObject')
+        .attr({
+            x: function(d,i){return -d.r+5},
+            y: 0,
+            width: function(d,i){return d.r*2-10},
+            height: function(d,i){return d.r*2-10}
+        })
 
-    var topicLabel = cGroups.append('g')
+    
+
+    var topicLabel = fo.append('xhtml:div')
         .attr('class', 'topicLabel')
         .attr({
             'pointer-events': 'none'
@@ -170,8 +176,10 @@ d3.custom.forceLayout = function (authors) {
         //         return d.r < 30 ? 'none' : 'block'
         //     }
         // })
+    
+    /*topicLabel.insertBefore('<switch>')*/
 
-    topicLabel.append('rect')
+    /*topicLabel.append('rect')
         .attr({
             x: function(d,i){return -d.r+5},
             y: -10,
@@ -180,33 +188,51 @@ d3.custom.forceLayout = function (authors) {
         })
         .style({
             /*fill: function(d,i){return cScale(d.value)},*/
-            opacity: .6
-        })
+            /*opacity: .6
+        })*/
     
-
-    topicLabel.append('text')
+    var text = topicLabel.append('xhtml:div')
+        .text(function(d,i){
+            return d.topic;
+        })
         .attr({
-            x:0, y:0, dy: '.35em',
+            width: 'auto',
+            height: 'auto'
+        })            
+        .attr({
+            /*x:-30, y:0, dy: '.35em',*/
             'text-anchor': 'middle'
         })
-        .style({
-            fill: '#30524d'
+        .style({fill: '#30524d'})
+        .style('font-size', function(d,i){ 
+            return String(d.r/4)+'px';
         })
-        .text(function(d,i){return d.topic})
+    
+    var typeahead = $('input').typeahead({
+      name: 'deputados',
+      local: inputData
+    })   
 
     topicLabel.style({
-        display: function(d,i){
-            var rect = d3.select(this).select('text').node().getBoundingClientRect()
+        display: function(d,i){    
+            var rect = d3.select(this).select('div').node().getBoundingClientRect()
             if (d.r*2 < rect.width + 10) {
                 d.label = false
-                return 'none'
+                /*return 'none'*/
             } else {
                 d.label = true
-                return 'block'
+                /*return 'block'*/
             }
-
         }
     })
+    
+    fo.each(function(d,i) {
+        var rect = d3.select(this).select('div').node().getBoundingClientRect()
+        var height = String(-(rect.height/2));
+        this.setAttribute('y', height);
+    })
+    
+    /*fo.attr('y', '-50')*/
 
     c_before = "";
 
@@ -467,7 +493,8 @@ d3.custom.forceLayout = function (authors) {
             
         var depCircleG_enter = depCircleG.enter().append('g')
             .attr({
-                'class': 'depCircleG'
+                'class': 'depCircleG',
+                'data-nome': function(d2,i) { return d2.author }
             })
             .on('mouseover', function(d2,i){
                 if (!d.fixed) {return}
@@ -634,6 +661,15 @@ d3.custom.forceLayout = function (authors) {
     function dragstart () {
 
     }
+    
+    typeahead.on('typeahead:selected',function(e,data){
+        cGroups.each(function(d,i) {            
+            d3.select(this).selectAll('.depCircleG').each(function(){
+                if(this.getAttribute('data-nome') == data.value)
+                    console.log(this.parentElement.parentElement);
+            });
+        })
+    })
   
   
     function colorize(d) {
@@ -668,8 +704,8 @@ d3.custom.forceLayout = function (authors) {
         ny = 0;
         nn = 0;
 
-    pcx = [] //ponto de colisão x
-    pcy = [] //ponto de colisão y
+    pcx = [] //pontos de colisão x
+    pcy = [] //pontos de colisão y
   
     for (nx = 0; nx <= ax; nx++) {
       for (ny = 0; ny >= by; ny--) {
@@ -732,6 +768,47 @@ queue()
 
 function ready (error, authorsEnf) {
 
+    d3.select('.loading').transition()
+        .duration(1000)
+        .style('opacity','0')
+        .delay(2000)
+        .remove()
+    // console.log(autorFinal[0])
+    //docs
+    // var docs = _(docs)
+    //     .map(function(d,i){
+    //         return {
+    //             i:i,
+    //             topic:d.x
+    //         }
+    //     })
+    //     .groupBy('topic')
+    //     .map(function(d,i){
+    //         return {
+    //             topic:i,
+    //             value: d.length
+    //         }
+    //     })
+    //     .value()
+
+    //authors
+    // var authors = _(authors)
+    //     .map(function(d,i){
+    //         return {
+    //             author:i,
+    //             topic:d.x,
+    //             value:1
+    //         }
+    //     })
+    //     .groupBy('topic')
+    //     .map(function(d,i){
+    //         return {
+    //             topic:i,
+    //             children: d
+    //         }
+    //     })
+    //     .value()
+
     //authorsEnf
     var authorsEnf = _(authorsEnf)
         // .filter(function(d,i){return d.enfaze>.1})
@@ -759,5 +836,4 @@ function ready (error, authorsEnf) {
         .value()
 
     d3.custom.forceLayout(authorsEnf)
-
 }

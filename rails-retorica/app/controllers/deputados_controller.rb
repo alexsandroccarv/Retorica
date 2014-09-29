@@ -128,7 +128,11 @@ class DeputadosController < ApplicationController
                                                      :sexo => sexo,
                                                      :email => email, :situacao => situacao)
 
-      deputado_instance.foto = URI.parse("http://www.camara.gov.br/internet/deputado/bandep/#{ide_cadastro}.jpg")
+
+
+      url_foto = "http://www.camara.gov.br/internet/deputado/bandep/#{ide_cadastro}.jpg"
+
+      deputado_instance.foto = URI.parse(url_foto)
       deputado_instance.save
       unidade_federativa.deputados << deputado_instance
       partido_atual.deputados << deputado_instance
@@ -140,18 +144,20 @@ class DeputadosController < ApplicationController
 
   def obter_enfase(deputado_instance, nome_parlamentar)
 
-    csv = SmarterCSV.process(Rails.public_path+"autorFinal70.csv")
+    csv = SmarterCSV.process(Rails.public_path+"autorFinal70.csv") if csv.nil?
 
     csv.each do  |csv_element|
       autor = csv_element[:autor]
       #if nome_parlamentar.downcase =~ /^abelar/
       #  require 'byebug'; byebug
       #end
-      if autor == nome_parlamentar
+      if autor ==  I18n.transliterate(nome_parlamentar)
         enfase = Enfase.find_or_create_by(:tema => csv_element[:rotulo], :valor => csv_element[:enfase])
         deputado_instance.enfases << enfase
         deputado_instance.save!
+
       end
+
     end
   end
 end

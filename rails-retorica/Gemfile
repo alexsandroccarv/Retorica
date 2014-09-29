@@ -73,6 +73,7 @@ gem 'nokogiri'
 
 # To use debugger
 #gem 'debugger'
-
+gem 'thin'
+gem 'i18n'
 gem 'byebug'
 
