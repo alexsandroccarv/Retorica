@@ -131,12 +131,16 @@ def main(argv):
                     if not database.discursos.find_one({'wsid': wsid}):
                         puts('Obtendo discurso {0}'.format(wsid))
 
-                        teor = client.service.obterInteiroTeorDiscursosPlenario(
-                            codSessao=sessao.codigo.strip(),
-                            numOrador=discurso.orador.numero,
-                            numQuarto=discurso.numeroQuarto,
-                            numInsercao=discurso.numeroInsercao,
-                        )
+                        try:
+                            teor = client.service.obterInteiroTeorDiscursosPlenario(
+                                codSessao=sessao.codigo.strip(),
+                                numOrador=discurso.orador.numero,
+                                numQuarto=discurso.numeroQuarto,
+                                numInsercao=discurso.numeroInsercao,
+                            )
+                        except:
+                            puts("Failed to get {0}".format(wsid))
+                            continue
 
                         teor = teor.sessao
 

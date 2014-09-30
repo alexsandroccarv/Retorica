@@ -2,259 +2,104 @@
 from __future__ import unicode_literals
 
 import re
+import pymongo
+import sys
 import unicodedata
 import itertools
-import os.path
+from StringIO import StringIO
+from argparse import ArgumentParser
 
 import nltk
-import numpy
-import pandas
-import pandas.rpy.common
-import rpy2.robjects
-
-from ofs.local import PTOFS
+import pyth.document
 from pyth.plugins.plaintext.writer import PlaintextWriter
-from pyth.plugins.rtf15.reader import Rtf15Reader
-from sklearn.feature_extraction.text import CountVectorizer
+from clint.textui import puts, colored
+from clint.textui import progress
+
+# XXX we should use local relative imports, but we are not in a package yet
+from rtfreader import CustomRtf15Reader as Rtf15Reader
 
 
-THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+def can_be_converted_to_text(p):
+    """Should return `True` if the given `pyth.document.Paragraph` can be
+    converted to text by the PlaintextWriter, `False` otherwise.
 
-# Quantidade de buckets que serão lidos. Deixe `0` para utilizar TODOS os
-# buckets.
-NBUCKETS = 20
-
-
-IGNORE_WORDS = set([
-    # preposições
-    'por', 'para', 'a', 'ante', 'ate', 'apos', 'de', 'desde', 'em', 'entre',
-    'com', 'sem', 'sob', 'sobre',
-
-    # pronomes
-    'eu', 'tu', 'ele', 'ela', 'nos', 'vos', 'eles', 'elas', 'voce', 'me',
-    'mim', 'se',
-
-    # artigos e combinações
-    'a', 'o', 'ao', 'da', 'do', 'pelo', 'pela', 'as', 'os', 'aos', 'das',
-    'dos', 'pelos', 'pelas', 'um', 'uma', 'uns', 'umas'
-
-    # etc
-    'que', 'sr', 'sra',
-])
-
-IGNORE_STEMS = set([
-    'porq', 'nao', 'sao', 'quer', 'ser', 'acontec', 'acord', 'agor',
-    'agradec', 'aind', 'algum', 'amanh', 'ano', 'anos', 'apen', 'apoi',
-    'apresent', 'aprov', 'assim', 'atend', 'ativ', 'autor', 'vem', 'vam',
-    'tud', 'quem', 'quer', 'que', 'onde', 'orador'
-])
-
-def dtm_as_dataframe(docs, labels=None, **kwargs):
-    """Create a DocumentTermMatrix as a pandas DataFrame.
-
-    `**kwargs` will be given directly to `CountVectorizer`.
-
-    *labels* will be used to label the rows
+    ...But currently only returns `False` for images.
     """
-    vectorizer = CountVectorizer(**kwargs)
-    x1 = vectorizer.fit_transform(docs)
-    df = pandas.DataFrame(x1.toarray(), columns=vectorizer.get_feature_names())
-    if labels:
-        df.index = labels
-    return df
+    return not isinstance(p, pyth.document.Image)
 
 
-def prepare_document(doc):
-    # Converter o documento do formato RTF para plaintext
-    doc = Rtf15Reader.read(doc)
-    doc = PlaintextWriter.write(doc).read().decode('utf-8')
+def sanitize_rtf_document(doc):
+    """Sanitize a `pyth.document.Document`, removing everything that can't be
+    converted to plain text.
 
-    # Remover caracteres especiais e acentuação
-    clean = unicodedata.normalize('NFKD', doc).encode('ascii', 'ignore').decode('utf-8')
+    WARNING! This method operates in place, changing the input *doc* and
+    returning `None`.
+    """
+    for paragraph in doc.content:
+        paragraph.content = filter(can_be_converted_to_text, paragraph.content)
 
-    # Remover pontuação e outros caracteres que não compõem palavras
+
+def process_document(content):
+    doc = StringIO(content)
+
+    rtfdoc = Rtf15Reader.read(doc)
+
+    # Remove non textual elements from the RTF document
+    sanitize_rtf_document(rtfdoc)
+
+    # Convert the RTF document to plain text
+    plaintext = PlaintextWriter.write(rtfdoc).read().decode('utf-8')
+
+    # Do our best to replace special characters (mostly accentuated chars)
+    # with their corresponding transliterated simplified chars
+    clean = unicodedata.normalize('NFKD', plaintext).encode('ascii', 'ignore').decode('utf-8')
+
+    # Do our best to remove punctuation and stuff that don't compose words
     allowed_categories = set(('Lu', 'Ll', 'Nd', 'Zs'))
+
     filter_function = lambda c: c if unicodedata.category(c) in allowed_categories else '#'
 
     clean = ''.join(map(filter_function, clean)).replace('#', ' ')
 
-    # Últimos retoques
+    # We don't want no extra spaces
     clean = re.sub(r'\s+', ' ', clean).lower().strip()
 
-    # Filtrar palavras muito utilizadas que nao representam muita coisa nesse contexto
-    words = (w for w in clean.split() if not w in IGNORE_WORDS and not w.isdigit())
-
+    # Reduce words to their stemmed version
     stemmer = nltk.stem.snowball.PortugueseStemmer()
 
-    return ' '.join(itertools.imap(stemmer.stem, words))
+    stemmed = ' '.join(itertools.imap(stemmer.stem, clean.split()))
+
+    return plaintext, stemmed
 
 
-def build_authors_matrix(storage, buckets):
-    # gerar uma matriz n * 2 onde as linhas representam os indices dos autores no set de autores,
-    # a primeira coluna indica o indice do primeiro documento do autor em questao, e a segunda,
-    # o indice de seu ultimo documento
-    authors_labels = {}
+def main(argv):
+    parser = ArgumentParser(prog='stemmer')
 
-    for bucket in buckets:
+    parser.add_argument('-H', '--host', type=unicode, default='localhost')
+    parser.add_argument('-P', '--port', type=int, default=27017)
+    parser.add_argument('-d', '--database', type=unicode, default='retorica_development')
 
-        for label in storage.list_labels(bucket):
-            md = storage.get_metadata(bucket, label)
-            author = md['orador']
-            authors_labels.setdefault(author, []).append(label)
+    args = parser.parse_args(argv[1:])
 
-    # Remover todos os deputados com apenas um discurso
-    for author in authors_labels.keys():
-        if len(authors_labels[author]) < 2:
-            del authors_labels[author]
+    mongo = pymongo.MongoClient(args.host, args.port)
+    database = getattr(mongo, args.database)
 
-    authors = sorted(authors_labels.keys())
+    documents = database.discursos.find({'conteudo_stemmed': {'$exists': False}})
 
-    authors_matrix = []
-    document_list = []
+    puts("Processing {0} documents...".format(documents.count()))
 
-    for author in authors:
-        if not authors_matrix:
-            # matrizes utilizam índice 1-
-            first = 1
-        else:
-            first = authors_matrix[-1][1] + 1
+    for d in progress.bar(documents, expected_size=documents.count()):
 
-        # documentos deste autor
-        docs = authors_labels[author]
+        try:
+            plaintext, stemmed = process_document(d['conteudo'])
+        except UnicodeDecodeError:
+            puts(colored.red('Error at {0}'.format(d['wsid'])))
 
-        # A lista de documentos deve estar ordenada de acordo com os autores!
-        document_list.extend(docs)
-
-        authors_matrix.append((first, first + len(docs) - 1))
-
-    return document_list, authors_matrix, authors
+        database.discursos.update({'_id': d['_id']}, {'$set': {
+            'conteudo_plain_text': plaintext,
+            'conteudo_stemmed': stemmed,
+        }})
 
 
-# inicializar o armazenamento
-storage = PTOFS()
-storage.list_buckets()
-
-# primeiros `NBUCKETS` disponiveis
-buckets = storage.list_buckets()
-
-if NBUCKETS:
-    buckets = itertools.islice(buckets, 0, NBUCKETS)
-
-# Gerar uma DTM a partir de todos os documentos nos buckets selecionados
-documents, authors, author_names = build_authors_matrix(storage, buckets)
-
-print('Processando {0} documentos...'.format(len(documents)))
-
-
-def load_and_prepare_document(label):
-    bucket = label.split(':')[0]
-    doc = storage.get_stream(bucket, label)
-    return prepare_document(doc)
-
-# carregar documentos e gerar uma dtm
-docs = itertools.imap(load_and_prepare_document, documents)
-
-dtm = dtm_as_dataframe(docs, labels=documents)
-
-# remover da DTM palavras pouco utilizadas
-
-class WordFrequencyHelper(object):
-    def __init__(self, min=2, max=float('inf')):
-        self.min, self.max = min, max
-        self.unused = []
-        self.frequent = []
-
-    def __call__(self, series):
-        s = series.sum()
-        if s < self.min:
-            self.unused.append(series.name)
-        if s > self.max:
-            self.frequent.append(series.name)
-
-# identificar e remover palavras usadas menos de (7 * nbuckets) vezes
-# note que esse numero e completamente arbitrario e eu nao faco ideia
-# do que estou fazendo!
-used_words_threshold = min(10, 0.001 * len(dtm.columns))
-freq_words_threshold = 0.05 * len(dtm.columns)
-fd = WordFrequencyHelper(min=used_words_threshold, max=freq_words_threshold)
-
-dtm.apply(fd, 0)
-
-print('Ignorando {0} palavras usadas menos de {1} vezes'.format(
-    len(fd.unused), used_words_threshold))
-
-print('Ignorando {0} palavras usadas mais de {1} vezes'.format(
-    len(fd.frequent), freq_words_threshold))
-
-dtm.drop(fd.unused, axis=1, inplace=True)
-dtm.drop(fd.frequent, axis=1, inplace=True)
-
-print('Aplicando vonmon a {0} documentos, {1} palavras e {2} autores...'.format(
-    len(dtm.index), len(dtm.columns), len(authors)
-))
-
-# interfacear com R :)
-
-rpy2.robjects.r('setwd("{0}")'.format(THIS_DIR))
-
-# converter nossa matriz de autores para uma matriz r
-authors = pandas.DataFrame(numpy.matrix(authors))
-
-rauthors = pandas.rpy.common.convert_to_r_matrix(authors)
-rdtm = pandas.rpy.common.convert_to_r_matrix(dtm)
-
-retorica = r'''
-retorica <- function(dtm, autorMatrix, ncats=70, verbose=T, kappa=400) {
-
-topics <- exp.agenda.vonmon(term.doc = dtm, authors = autorMatrix,
-                            n.cats = ncats, verbose = verbose, kappa = kappa)
-
-# Definindo topicos de cada autor e arquivo final
-autorTopicOne <- NULL
-for( i in 1:dim(topics[[1]])[1]){
-  autorTopicOne[i] <- which.max(topics[[1]][i,])
-}
-
-# compute the proportion of documents from each author to each topic
-autorTopicPerc <- prop.table(topics[[1]], 1)
-
-autorTopicOne <- as.data.frame(autorTopicOne)
-
-for( i in 1:nrow(autorTopicOne)){
-  autorTopicOne$enfase[i] <- autorTopicPerc[i,which.max(autorTopicPerc[i,])]
-}
-
-topics$one <- autorTopicOne
-
-save("topics", file="topics.RData");
-
-return(topics)
-}
-'''
-
-# carregar o vonmon
-rpy2.robjects.r("source('../r/ExpAgendVMVA.R')")
-
-# carregar o retorica
-retorica = rpy2.robjects.r(retorica)
-
-# chamar o retorica
-result = retorica(rdtm, rauthors)
-
-print('Salvando resultados...')
-print('topics.csv...')
-
-# temas relevantes estão salvos na variável `topics$one`
-topics = pandas.rpy.common.convert_robj(result[4])
-
-topics.index = author_names
-topics.columns = ('tema', 'enfase')
-
-topics.to_csv(os.path.join(THIS_DIR, 'topics.csv'), encoding='utf-8')
-
-print('topic_words.csv...')
-
-write_table = rpy2.robjects.r('write.table')
-write_table(result[1], file='topic_words.csv', sep=',', row_names=True)
-
-print('Feito!')
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
