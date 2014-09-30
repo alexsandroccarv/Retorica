@@ -7,7 +7,6 @@ class Deputado
 
   has_mongoid_attached_file :foto
 
-  #field :_id, type: String
   field :ide_cadastro, type: String
   field :situacao, type: String
   field :site_deputado, type: String
@@ -24,9 +23,14 @@ class Deputado
   validates_attachment :foto, content_type: { content_type: ["image/jpg", "image/jpeg", "image/png", "image/gif"] }
 
   def serializable_hash(options)
-    # FIXME DOESNT WORK :'(
-    super({:include => {
-      :foto_url => foto.url
-    }}.merge(options))
+    super({:methods => [:foto_url]}.merge(options))
+  end
+
+  def foto_url
+    if foto.exists?
+      foto.url
+    else
+      ActionController::Base.helpers.asset_path 'null.jpeg'
+    end
   end
 end

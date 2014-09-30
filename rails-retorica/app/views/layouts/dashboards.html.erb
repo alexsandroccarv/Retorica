@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="<%= content_for?(:description) ? yield(:description) : "Retorica Rails" %>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%= csrf_meta_tags %>
+
+    <title><%= content_for?(:title) ? yield(:title) : "Retorica Parlamentar" %></title>
+
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track' => true %>
+
+    <%= stylesheet_link_tag 'application', 'http://fonts.googleapis.com/css?family=Oswald', type: 'text/css' %>
+
+    <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  </head>
+
+  <body>
+    <main role="main">
+      <%= render 'layouts/messages' %>
+      <%= yield %>
+    </main>
+  </body>
+</html>

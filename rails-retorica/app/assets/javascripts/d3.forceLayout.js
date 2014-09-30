@@ -10,6 +10,13 @@
 # [GNU General Public License OU GNU Affero General Public License], sob o título "LICENCA.txt"
 */
 
+//= require d3
+//= require lodash
+//= require typeahead.bundle
+
+if (!d3.custom)
+  d3.custom = {}
+
 d3.custom.forceLayout = function (authors) {
 
     var color_h = "#e9a30d";
@@ -751,56 +758,4 @@ d3.custom.forceLayout = function (authors) {
     }
 
 
-}
-
-////////////////////////////////////
-///////////////////////////////////
-
-queue()
-  .defer(d3.json, "/dashboards/setembro-2013-presente.json")
-  .await(ready);
-
-
-function ready (error, data) {
-  d3.select('.loading').transition()
-    .duration(1000)
-    .style('opacity','0')
-    .delay(2000)
-    .remove();
-
-  var topics = _(data.topics)
-    .filter(function(d) {
-      return !d.ignore && d.title.indexOf("Solenidades") !== 0;
-    })
-    .map(function(d, i) {
-
-      var emphases = _(d.emphases)
-        .map(function(d, i) {
-          var r = {
-            id: i,
-            value: d.emphasis,
-            author: d.name
-          };
-
-          if (d.deputado) {
-            r['url'] = d.deputado.site_deputado;
-            if (d.deputado.foto)
-              r['foto'] = d.deputado.foto.url;
-            //r['uf'] = d.deputado.u.url;
-            //r['partido'] = d.deputado.foto.url;
-            r['email'] = d.deputado.email;
-          }
-
-          return r;
-        }).value();
-
-      return {
-        topic: d.title,
-        value: d3.sum(emphases, function(d, i) { return d.value; }),
-        children: emphases
-      };
-    })
-    .value();
-
-  d3.custom.forceLayout(topics);
 }

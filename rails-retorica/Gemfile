@@ -8,7 +8,6 @@ gem 'rails', '4.1.5'
 #Mongo
 gem 'mongoid'
 
-
 # Soap client Ruby
 gem 'savon', '~> 2.3.0'
 
@@ -21,6 +20,8 @@ gem 'font-awesome-sass'
 gem 'momentjs-rails', '~> 2.5.0'
 gem 'jquery-ui-rails'
 gem 'bootstrap-sass', '~> 3.1.1.1'
+gem 'd3_rails', '~> 3.4.11'
+gem 'lodash-rails', '~> 2.4.1'
 
 gem 'jquery-rails'
 

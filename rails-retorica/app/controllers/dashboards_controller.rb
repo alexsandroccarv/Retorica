@@ -1,5 +1,6 @@
 class DashboardsController < ApplicationController
-  before_action :set_dashboard, only: [:show]
+  before_action :set_dashboard, :only => [:show]
+
   respond_to :html, :json
 
   def index
@@ -10,10 +11,15 @@ class DashboardsController < ApplicationController
     respond_with @dashboard
   end
 
-  private
+  def first
+    first_url = url_for Dashboard.first
+    return redirect_to first_url
+  end
+
+  protected
 
     def set_dashboard
-      @dashboard = Dashboard.where(:slug => params[:id]).first
+      @dashboard = Dashboard.where(:_id => params[:id]).first
     end
 
 end
