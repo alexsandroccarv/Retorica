@@ -8,13 +8,7 @@ class DeputadosController < ApplicationController
   # GET /deputados.json
   def index
 
-    @deputados = []
-    # Colocando Somente os deputados com discursos
-    Deputado.all.each do |deputado|
-      if deputado.enfases.exists?
-        @deputados << deputado
-      end
-    end
+   Deputado.all
 
     respond_to do |format|
       format.json {}
@@ -35,11 +29,10 @@ class DeputadosController < ApplicationController
 
 
   def import
-    obter_deputados_arquivo
     respond_to do |format|
       format.html{
-
-        #redirect_to root_path, notice: 'Deputados atualizados com sucesso.'
+        obter_deputados_arquivo
+        redirect_to root_path, notice: 'Deputados atualizados com sucesso.'
         }
     end
 
@@ -134,7 +127,6 @@ class DeputadosController < ApplicationController
       unidade_federativa.deputados << deputado_instance
       partido_atual.deputados << deputado_instance
 
-      #obter_enfase(deputado_instance,nome_parlamentar)
     end
   end
 
