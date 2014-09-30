@@ -2,6 +2,8 @@
 #= require lodash
 #= require d3.forceLayout
 
+# Quick hack to export a function to the *global* namespace so
+# that it can be called from within script blocks
 root = exports ? this
 
 doTheThing = root.doTheThing = (source) ->
