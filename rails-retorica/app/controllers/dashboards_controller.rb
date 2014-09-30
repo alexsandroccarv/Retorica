@@ -10,6 +10,11 @@ class DashboardsController < ApplicationController
     respond_with @dashboard
   end
 
+  def first
+    first_url = url_for Dashboard.first
+    return redirect_to first_url
+  end
+
   private
 
     def set_dashboard
