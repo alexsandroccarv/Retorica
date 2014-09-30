@@ -12,7 +12,7 @@ doTheThing = root.doTheThing = (source) ->
       .transition()
       .duration(1000)
       .style('opacity','0')
-      .delay(2000)
+      .delay(500)
       .remove()
 
     topics = _(data.topics)
@@ -33,6 +33,7 @@ doTheThing = root.doTheThing = (source) ->
         if d.deputado
           r.url = d.deputado.site_deputado
           r.email = d.deputado.email
+          r.foto = d.deputado.foto_url
           #r.foto = d.deputado.
           #if (d.deputado.foto)
           #  r['foto'] = d.deputado.foto.url;
