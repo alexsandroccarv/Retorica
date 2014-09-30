@@ -8,17 +8,15 @@ class DeputadosController < ApplicationController
   # GET /deputados.json
   def index
 
-   @deputados = []
-  # Colocando Somente os deputados com discursos
-   Deputado.all.each do |deputado|
-
-    if deputado.enfases.exists?
-    @deputados << deputado
+    @deputados = []
+    # Colocando Somente os deputados com discursos
+    Deputado.all.each do |deputado|
+      if deputado.enfases.exists?
+        @deputados << deputado
+      end
     end
 
-   end
-
-   respond_to do |format|
+    respond_to do |format|
       format.json {}
     end
   end
@@ -95,7 +93,7 @@ class DeputadosController < ApplicationController
   end
 
   def obter_detalhes_deputado(ide_cadastro)
-  # Criando a conexão com o Servidor da Câmara
+    # Criando a conexão com o Servidor da Câmara
     client = Savon.client(wsdl: 'http://www.camara.gov.br/SitCamaraWS/Deputados.asmx?wsdl')
 
     deputado_response_details = client.call(:obter_detalhes_deputado,
@@ -122,13 +120,12 @@ class DeputadosController < ApplicationController
                                                 :sigla => item.assoc('partido_atual')[1]['sigla'])
 
 
-      deputado_instance = Deputado.find_or_create_by(:_id => ide_cadastro,
+      deputado_instance = Deputado.find_or_create_by(:ide_cadastro => ide_cadastro,
                                                      :site_deputado => " http://www.camara.leg.br/internet/deputado/Dep_Detalhe.asp?id=#{ide_cadastro}",
                                                      :nome_parlamentar => nome_parlamentar,
                                                      :sexo => sexo,
-                                                     :email => email, :situacao => situacao)
-
-
+                                                     :email => email,
+                                                     :situacao => situacao)
 
       url_foto = "http://www.camara.gov.br/internet/deputado/bandep/#{ide_cadastro}.jpg"
 
@@ -137,27 +134,8 @@ class DeputadosController < ApplicationController
       unidade_federativa.deputados << deputado_instance
       partido_atual.deputados << deputado_instance
 
-      obter_enfase(deputado_instance,nome_parlamentar)
-
+      #obter_enfase(deputado_instance,nome_parlamentar)
     end
   end
 
-  def obter_enfase(deputado_instance, nome_parlamentar)
-
-    csv = SmarterCSV.process(Rails.public_path+"autorFinal70.csv") if csv.nil?
-
-    csv.each do  |csv_element|
-      autor = csv_element[:autor]
-      #if nome_parlamentar.downcase =~ /^abelar/
-      #  require 'byebug'; byebug
-      #end
-      if autor ==  I18n.transliterate(nome_parlamentar)
-        enfase = Enfase.find_or_create_by(:tema => csv_element[:rotulo], :valor => csv_element[:enfase])
-        deputado_instance.enfases << enfase
-        deputado_instance.save!
-
-      end
-
-    end
-  end
 end

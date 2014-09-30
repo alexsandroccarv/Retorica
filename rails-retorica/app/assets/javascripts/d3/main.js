@@ -18,7 +18,6 @@ d3.custom.forceLayout = function (authors) {
     
     /*loading = d3.select('body').append('div')
         .attr('class','loading')*/
-    
 
     d3.select('.inputContainer')
         .style({
@@ -757,83 +756,51 @@ d3.custom.forceLayout = function (authors) {
 ////////////////////////////////////
 ///////////////////////////////////
 
-
 queue()
-    // .defer(d3.csv, "data/doc_topic_one.csv")
-    // .defer(d3.csv, "data/autor_topic_one.csv")
-    // .defer(d3.csv, "data/autor_topic_one_enfase.csv")
-    .defer(d3.json, "/deputados.json")
-    .await(ready);
+  .defer(d3.json, "/dashboards/setembro-2013-presente.json")
+  .await(ready);
 
 
-function ready (error, authorsEnf) {
+function ready (error, data) {
+  d3.select('.loading').transition()
+    .duration(1000)
+    .style('opacity','0')
+    .delay(2000)
+    .remove();
 
-    d3.select('.loading').transition()
-        .duration(1000)
-        .style('opacity','0')
-        .delay(2000)
-        .remove()
-    // console.log(autorFinal[0])
-    //docs
-    // var docs = _(docs)
-    //     .map(function(d,i){
-    //         return {
-    //             i:i,
-    //             topic:d.x
-    //         }
-    //     })
-    //     .groupBy('topic')
-    //     .map(function(d,i){
-    //         return {
-    //             topic:i,
-    //             value: d.length
-    //         }
-    //     })
-    //     .value()
+  var topics = _(data.topics)
+    .filter(function(d) {
+      return !d.ignore && d.title.indexOf("Solenidades") !== 0;
+    })
+    .map(function(d, i) {
 
-    //authors
-    // var authors = _(authors)
-    //     .map(function(d,i){
-    //         return {
-    //             author:i,
-    //             topic:d.x,
-    //             value:1
-    //         }
-    //     })
-    //     .groupBy('topic')
-    //     .map(function(d,i){
-    //         return {
-    //             topic:i,
-    //             children: d
-    //         }
-    //     })
-    //     .value()
+      var emphases = _(d.emphases)
+        .map(function(d, i) {
+          var r = {
+            id: i,
+            value: d.emphasis,
+            author: d.name
+          };
 
-    //authorsEnf
-    var authorsEnf = _(authorsEnf)
-        // .filter(function(d,i){return d.enfaze>.1})
-        .map(function(d,i){
-            return {
-                author: d.autor,
-                topic: d.rotulo,
-                value: d.enfase,
-                uf: d.uf,
-                partido: d.partido,
-                url: d.url,
-                foto: d.foto,
-                email: d.email,
-                id: i
-            }
-        })
-        .groupBy('topic')
-        .map(function(d,i){
-            return {
-                topic:i,
-                value: d3.sum(d, function(d,i){return d.value}),
-                children: d
-            }
-        })
-        .value()
+          if (d.deputado) {
+            r['url'] = d.deputado.site_deputado;
+            if (d.deputado.foto)
+              r['foto'] = d.deputado.foto.url;
+            //r['uf'] = d.deputado.u.url;
+            //r['partido'] = d.deputado.foto.url;
+            r['email'] = d.deputado.email;
+          }
 
-    d3.custom.forceLayout(authorsEnf)
+          return r;
+        }).value();
+
+      return {
+        topic: d.title,
+        value: d3.sum(emphases, function(d, i) { return d.value; }),
+        children: emphases
+      };
+    })
+    .value();
+
+  d3.custom.forceLayout(topics);
 }
