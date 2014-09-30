@@ -222,7 +222,7 @@ d3.custom.forceLayout = function (authors) {
     topicLabel.style({
         display: function(d,i){    
             var rect = d3.select(this).select('div').node().getBoundingClientRect()
-            if (d.r*2 < rect.width + 10) {
+            if (d.r*2 < 100) {
                 d.label = false
                 /*return 'none'*/
             } else {
@@ -249,8 +249,6 @@ d3.custom.forceLayout = function (authors) {
             if (d.fixed) return
             d3.select(this)
                 .select('.topicCircle')
-                /*console.log(this.firstChild.getAttribute('style'));*/
-                /*console.log(((d3.rgb(this.firstChild.getAttribute('style'))).brighter(0.6)).toString());*/
                 .style({
                     'fill': ((d3.rgb(this.firstChild.getAttribute('style'))).brighter(0.4)).toString()
                 })
@@ -269,7 +267,7 @@ d3.custom.forceLayout = function (authors) {
             popover.style({
                     opacity: 1,
                     left: (rect.left - rectPop.width/2 + d.r) + 'px',
-                    top: (rect.top + 10 + d.r*2) + 'px'
+                    top: ((d.y - 95) + d.r) + 'px'
                 })
 
             popover.select('.tick')
@@ -463,7 +461,7 @@ d3.custom.forceLayout = function (authors) {
 
     force.on('tick', function(e){
         var q = d3.geom.quadtree(docs),
-            i = 0,
+            i = -1,
             n = docs.length
 
         while (++i < n) {
@@ -511,6 +509,8 @@ d3.custom.forceLayout = function (authors) {
                     })
 
                 var rect = this.getBoundingClientRect()
+                
+                console.log(d2.y);
 
                 var popover = d3.select('.popover')
                 popover.select('.nome')
@@ -524,7 +524,7 @@ d3.custom.forceLayout = function (authors) {
                 popover.style({
                         opacity: 1,
                         left: (rect.left - rectPop.width/2 + d2.r) + 'px',
-                        top: (rect.top + 5 + d2.r*2) + 'px'
+                        top: d2.y + 500 - d.r + 'px' /*d2.y + d2.r*2*/ 
                     })
 
                 popover.select('.tick')
