@@ -290,8 +290,6 @@ d3.custom.forceLayout = function (authors) {
                 })
         })
         .on('click', function(d,i){
-        
-            /*this.childNodes[1].setAttribute('class', 'depG clicked');*/
 
             d3.select('.popover2')
                 .style({
@@ -304,12 +302,18 @@ d3.custom.forceLayout = function (authors) {
             }
             closeTopics(d,i)            
 
-            d3.select('.title')
-                .text(d.topic)
-            d3.select('.description')
+            d3.select('.name')
+                .text(d.topic) 
+            d3.select('.intro')
                 .transition()
                 .style({
                     opacity: 0
+                })
+                .each("end", function() { 
+                    d3.select('.intro')
+                        .style({
+                            display: 'none'
+                        })
                 })
 
             var sel = d3.select(this)
@@ -372,17 +376,33 @@ d3.custom.forceLayout = function (authors) {
     function closeTopics (d,i){
         
         
-        d3.select('.title')
-            .text('Retórica')
-        d3.select('.description')
+        d3.select('.name')
+            .text('')
+        d3.select('.part')
+            .text('')
+        d3.select('.email')
+            .text('')
+        d3.select('.site')
+            .text('')
+        d3.select('.intro')
             .transition()
             .style({
                 opacity: 1
             })
-        d3.select('.description2')
+            .each("end", function() { 
+                d3.select('.intro')
+                    .transition()
+                    .style({
+                        opacity: 1
+                    })
+                    .style({
+                        display: 'block'
+                    })
+            })
+        d3.select('.info')
             .transition()
             .style({
-                opacity: 0
+                opacity: 1
             })
 
         var sel = cGroups.filter(function(d,i){return d.fixed == true})
@@ -510,7 +530,6 @@ d3.custom.forceLayout = function (authors) {
 
                 var rect = this.getBoundingClientRect()
                 
-                console.log(d2.y);
 
                 var popover = d3.select('.popover')
                 popover.select('.nome')
@@ -548,29 +567,46 @@ d3.custom.forceLayout = function (authors) {
             .on('click', function(d2,i){
                 if (!d.fixed) return
                 d3.event.stopPropagation()
+                
+                if (d2.author != d3.select('.name').text()) {
+                    
+                    d3.select('.info')
+                        .transition()
+                        .style({
+                            opacity: 0
+                        })
+                        .each("end", function(){
+                            d3.select('.info')
+                                .transition()
+                                .style({
+                                    opacity: 1
+                                })
+                                .each("end", function() {
+                                    d3.select('.intro')
+                                        .style({
+                                            diplay: 'none'
+                                        })
+                                })
+                            d3.select('.info .name')
+                                .text(d2.author)
+                            d3.select('.info .part')
+                                .text(d2.partido + '/' + d2.uf)
+                            d3.select('.info .email')
+                                .text(function(){
+                                    if (d2.email == 'NA') {
+                                        return 'email não disponível'
+                                    } else {
+                                        return d2.email
+                                    }
+                                })
+                            d3.select('.info .site')
+                                .attr({
+                                    href: d2.url
+                                })
+                                .text('Site')
+                        })
 
-                d3.select('.description2 .nome')
-                    .text(d2.author)
-                d3.select('.description2 .partido')
-                    .text(d2.partido + '/' + d2.uf)
-                d3.select('.description2 .email')
-                    .text(function(){
-                        if (d2.email == 'NA') {
-                            return 'email não disponível'
-                        } else {
-                            return d2.email
-                        }
-                    })
-                d3.select('.description2 .site')
-                    .attr({
-                        href: d2.url
-                    })
-
-                d3.select('.description2')
-                    .transition()
-                    .style({
-                        opacity: 1
-                    })
+                }
 
             })
         depCircleG_enter.each(function(d,i){
@@ -693,7 +729,6 @@ d3.custom.forceLayout = function (authors) {
     bx = 0;
     by = -parseInt($('#triangle').css('border-top-width'));
   
-    console.log();
   
     cx = 250;
     cy = -250;   
