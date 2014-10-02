@@ -73,7 +73,7 @@ def process_document(content):
 
 
 def main(argv):
-    parser = ArgumentParser(prog='stemmer')
+    parser = ArgumentParser()
 
     parser.add_argument('-H', '--host', type=unicode, default='localhost')
     parser.add_argument('-P', '--port', type=int, default=27017)
@@ -102,4 +102,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv) or 0)

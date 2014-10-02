@@ -1,55 +1,166 @@
-Scripts
-=======
+scripts
+#######
 
-Scripts experimentais. Em breve os organizaremos melhor. Por enquanto, use
-Python 2 e instale todos os pacotes a seguir. Note que a instalação *deve*
-ser feita em dois passos:
+These are the Python scripts we use to compute the application data. It's
+basically a collection of scripts which will download speeches from the
+web service, convert them to plain text, generate a Document Text Matrix out
+of them, run the `exp.agenda.vonmon` algorithm on it and save the results in a
+bunch of `.csv` files. Then there's another script that will process these
+`.csv` files into our application database.
 
-::
 
-    $ pip install suds ofs pairtree pyth rpy2 ltk numpy pandas Cython numexpr
-    $ pip install scipy scikit-learn tables
+System Requirements
+===================
 
-ws.py
+To do all this we need R, Python, some Python scientific libraries, a MongoDB
+database and some computing power. The following instructions will give you
+everything you need in a Ubuntu system.
+
+
+R 3.1
 -----
 
-O script **ws.py** varre o serviço de dados abertos da câmara coletando os
-conteúdos dos discursos nos períodos especificados (atualmente desde o dia
-2/2/2011) e os salva numa estrutura de diretórios gerada com o pacote
-Pairtree, com os metadados relevantes associados.
+We'll need R version 3.1 or greater. Since the version available at the Ubuntu
+repository is older than that, we can install it from Micheal Rutter's PPA,
+`ppa:marutter/rrutter`.
 
-Em breve escreverei um script com exemplos de como ler essa estrutura e
-extrair os metadados.
+.. code:: bash
 
-::
+    sudo apt-add-repository ppa:marutter/rrutter
+    sudo apt-get update && sudo apt-get install r-base
 
-    $ python ws.py
+
+Python headers and development packages
+---------------------------------------
+
+These are required to compile some Python packages. Thanks to `build-dep`,
+it's pretty easy to install them on Ubuntu.
+
+.. code:: bash
+
+    sudo apt-get build-dep python-numpy python-scipy
+
+
+MongoDB
+-------
+
+Setup a MongoDB instance anywhere. For simplicity sake, I recommend you to
+create a database called `retorica_development`, since it's the default
+value for the database parameter in most of the scripts.
+
+
+Installation
+============
+
+Now that we have everything we need it's time to install some *eggs*!
+
+.. code:: bash
+
+    pip install clint iso8601 pymongo suds pyth rpy2 nltk numpy pandas Cython numexpr
+    pip install scipy scikit-learn tables
+
+Note that apparently, the installation has to be done in two steps. Or
+something like that.
+
+
+Running the Thing
+=================
+
+And finally, let's run this thing. I'll explain every script in the order it
+has to be executed.
+
+
+scrape.py
+---------
+
+This script will download the speeches from the web service and save them into
+the database. Call it with your database connection information and watch the
+beautiful text scroll.
+
+.. code:: bash
+
+    python scrape.py -H 192.168.1.5
+
+
+It may take some time to download everything, so you should probably leave it
+running and go see some cat pictures at reddit. But don't take too long!
+Sometimes it breaks and your intervention (to restart it) may be required.
 
 
 stemmer.py
 ----------
 
-O script **stemmer.py** processa os documentos baixados pelo **ws.py**, gera
-uma DTM, interfaceia com o R, executa o algoritmo vonmon, salva a humanidade e
-domina o mundo.
+Once all the speeches are saved into the database, `stemmer.py` will convert
+the documents to plain text, remove special characters and images and stem the
+words. Again, call it with your database connection information.
 
-::
+.. code:: bash
 
-    $ python stemmer.py
+    python stemmer.py -H 192.168.1.5
 
 
-Também, é preciso alterar o arquivo `pandas/rpy/common.py` e colocar isso numa
-linha específica. Por favor, alguém resolva isso.
+gendocs.py
+----------
 
-..code:: python
+You would think that now that we have stemmed our documents we could go ahead
+and generate a result, right? Well, not quite yet. First we need to pull
+*some* documents from the database and save them into a file. Why? Don't ask
+me why, just do it.
 
-    try:
-        value = VECTOR_TYPES[value_type](value)
-    except KeyError:
-        # do some magic just because
-        x = globals().get('NAMED_VECTOR_TYPES')
-        if x is None:
-            x = globals().setdefault('NAMED_VECTOR_TYPES', dict((
-                (t.__name__, v) for (t, v) in VECTOR_TYPES.iteritems()
-            )))
-        value = x[value_type.__name__](value)
+.. code:: bash
+
+    python gendocs.py -H 192.168.1.5 mydocuments.json
+
+The generated file will contain one tuple of speaker and speech per line,
+dumped as a JSON Array. You can give `gendocs.py` some arguments to filter
+stuff out by date or *session phase*.
+
+    **TODO FIXME**: We should really cut this step and pull the documents
+    directly from the database. Also, we should list available phases somehow,
+    so the user can decide what to filter.
+
+
+vonmon.py
+---------
+
+Actually process stuff. `vonmon.py` will read the file generated by
+`gendocs.py`, generate a Document Term Matrix out of it, call
+`exp.agenda.vonmon` through some *Python to R interface* implemented by
+`rpy2`, get the results and save as a bunch of `.csv` files at a location
+specified by `-o` (which is, by default, `./vonmon/YYYY-mm-dd_HH-MM`).
+
+You can (and probably should!) also specify some sane values for `--maxdf` and
+`--mindf`, which will be used as thresholds for word frequency. Any value
+between 0.0 and 1.0 is acceptable, but we usually get better results with
+numbers around 0.002 for the minimum document frequency (`--mindf`) and 0.3
+for the maximum document frequency (`--maxdf`). This will instruct the system
+to ignore words used too often and words that are too infrequent. Tune the
+values depending on your input and how many documents you're processing.
+
+.. code:: bash
+
+    python vonmon.py mydocuments.json --mindf=0.002 --maxdf=0.3
+
+Note that this will take quite some time and quite some memory, depending on
+how many documents you're processing. If everything work out, a bunch of
+`.csv` files will be generated inside the folder specified by `-o`. Go have a
+look at them.
+
+
+finallyaresult.py
+-----------------
+
+Finally, a result!
+
+Now that we have this bunch of `.csv` files, let's call `finallyaresult.py` on
+them and convert them to data for our application. Call it with your database
+connection information and the path to the folder containing the `.csv` files
+generated in the previous step. Oh, and also, give your result a title through
+the `-t` flag.
+
+.. code:: bash
+
+    python finallyaresult.py -H 192.168.1.5 -t 'Awesome Result' ./vonmon/2014-09-25_14-37
+
+
+Aaaaand that's all, folks. Enjoy your visualization.

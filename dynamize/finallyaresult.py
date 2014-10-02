@@ -44,6 +44,19 @@ def strip_deputy_name(name):
     return name
 
 
+def find_deputy_by_name(collection, name):
+    # XXX FIXME should be atomic!
+    deputy = collection.find_one({'nome_parlamentar': name})
+
+    if deputy is None:
+        # Try again with some transliteration
+        # This happens to a guy named ANDRÉ -something
+        name = transliterate_like_rails(name)
+        deputy = collection.find_one({'nome_parlamentar': name})
+
+    return deputy
+
+
 def main(argv):
     parser = argparse.ArgumentParser()
 
@@ -53,13 +66,18 @@ def main(argv):
 
     parser.add_argument('-t', '--title', type=unicode)
 
-    parser.add_argument('result_file', type=argparse.FileType('r'))
-    parser.add_argument('topics_file', type=argparse.FileType('r'))
+    parser.add_argument('results_folder', type=unicode, help='Path to the results folder')
 
     args = parser.parse_args(argv[1:])
 
-    result = pandas.read_csv(args.result_file, index_col=0, encoding='utf-8')
-    topics = pandas.read_csv(args.topics_file, header=None, index_col=0, encoding='utf-8')
+    result = os.path.join(args.results_folder, 'result.csv')
+    result = pandas.read_csv(result, index_col=0, encoding='utf-8')
+
+    topics = os.path.join(args.results_folder, 'words.csv')
+    topics = pandas.read_csv(topics, header=None, index_col=0, encoding='utf-8')
+
+    rs = os.path.join(args.results_folder, 'rs.csv')
+    rs = pandas.read_csv(rs, index_col=0, encoding='utf-8')
 
     mongo = pymongo.MongoClient(args.host, args.port)
     database = getattr(mongo, args.database)
@@ -103,23 +121,19 @@ def main(argv):
 
         stripped_name = strip_deputy_name(name)
 
-        # XXX FIXME should be atomic!
-        deputado = database.deputados.find_one({'nome_parlamentar': stripped_name})
-        id_deputado = deputado['_id'] if deputado else None
-
-        if id_deputado is None:
-            # Try again with some transliteration
-            # This happens to a guy named ANDRÉ -something
-            stripped_name = transliterate_like_rails(stripped_name)
-            id_deputado = deputado['_id'] if deputado else None
+        # XXX FIXME shouldn't this be atomic?
+        deputy = find_deputy_by_name(stripped_name)
 
         database.emphases.insert({
             'name': name,
             'stripped_name': stripped_name,
             'emphasis': emphasis,
             'topic_id': topic_id,
-            'deputado_id': id_deputado,
+            'deputado_id': deputy['_id'] if deputy else None,
         })
+
+    #for row in (result.irow(i) for i in range(rs.shape[0])):
+    #    emphasis
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv) or 0)
