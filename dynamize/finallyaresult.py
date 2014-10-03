@@ -122,7 +122,7 @@ def main(argv):
         stripped_name = strip_deputy_name(name)
 
         # XXX FIXME shouldn't this be atomic?
-        deputy = find_deputy_by_name(stripped_name)
+        deputy = find_deputy_by_name(database.deputados, stripped_name)
 
         database.emphases.insert({
             'name': name,
