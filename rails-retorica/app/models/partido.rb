@@ -7,4 +7,10 @@ class Partido
   field :sigla, type: String
 
   has_and_belongs_to_many :deputados
+
+
+  def serializable_hash(options)
+    super({ only: [:sigla]}.merge(options || {}))
+  end
+
 end

@@ -23,7 +23,8 @@ class Deputado
   validates_attachment :foto, content_type: { content_type: ["image/jpg", "image/jpeg", "image/png", "image/gif"] }
 
   def serializable_hash(options)
-    super({:methods => [:foto_url]}.merge(options))
+    super({ only: [:ide_cadastro, :site_deputado, :nome_parlamentar, :email, :foto_url], include: [:partidos,
+            :unidade_federativa]}.merge(options || {}))
   end
 
   def foto_url
