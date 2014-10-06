@@ -19,6 +19,8 @@ doTheThing = root.doTheThing = (source) ->
 
     topics = _(data.topics)
 
+    item_id_counter = 0
+
     topics = topics.filter (d) ->
       (not d.ignore) and d.title.indexOf("Solenidades") != 0
 
@@ -28,7 +30,9 @@ doTheThing = root.doTheThing = (source) ->
       emphases = emphases.map (d, i) ->
 
         r =
-          id: i
+          # XXX Ids MUST be unique through the entire visualization, or bad
+          # things will happen.
+          id: (item_id_counter++)
           value: d.emphasis
           author: d.name
 
@@ -46,6 +50,7 @@ doTheThing = root.doTheThing = (source) ->
 
         return r
 
+      #emphases = emphases.sortBy( (r)-> r.value )
       emphases = emphases.value()
 
       return {
