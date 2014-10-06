@@ -10,9 +10,10 @@
 # [GNU General Public License OU GNU Affero General Public License], sob o título "LICENCA.txt"
 */
 
-//= require d3
-//= require lodash
 //= require typeahead.bundle
+//= require lodash
+//= require d3
+
 
 if (!d3.custom)
   d3.custom = {}
@@ -22,9 +23,6 @@ d3.custom.forceLayout = function (authors) {
     var color_h = "#e9a30d";
     var color_m = "#6d9c66";
     var color_s = "#409f89";  
-    
-    /*loading = d3.select('body').append('div')
-        .attr('class','loading')*/
 
     d3.select('.inputContainer')
         .style({
@@ -214,10 +212,12 @@ d3.custom.forceLayout = function (authors) {
             return String(d.r/4)+'px';
         })
     
+    
     var typeahead = $('input').typeahead({
       name: 'deputados',
       local: inputData
-    })   
+    })
+      
 
     topicLabel.style({
         display: function(d,i){    
@@ -518,7 +518,12 @@ d3.custom.forceLayout = function (authors) {
         var depCircleG_enter = depCircleG.enter().append('g')
             .attr({
                 'class': 'depCircleG',
-                'data-nome': function(d2,i) { return d2.author }
+                'data-nome': function(d2,i) { 
+                    return d2.author 
+                }/*,
+                'data-partido': function(d2,i) { return d2. },
+                'data-uf': function(d2,i) { return d2.uf }*/
+                
             })
             .on('mouseover', function(d2,i){
                 if (!d.fixed) {return}
@@ -700,7 +705,6 @@ d3.custom.forceLayout = function (authors) {
                 // cx: function(d,i){return d.x},
                 // cy: function(d,i){return d.y},
                 r: function(d,i){
-                    // console.log(d)
                     // return d.parent.children.length > 1 ? d.r - 2 : d.r - 4
                     return d.r - 2
                 }
@@ -737,8 +741,10 @@ d3.custom.forceLayout = function (authors) {
     typeahead.on('typeahead:selected',function(e,data){
         cGroups.each(function(d,i) {            
             d3.select(this).selectAll('.depCircleG').each(function(){
-                if(this.getAttribute('data-nome') == data.value)
+                if(this.getAttribute('data-nome') == data.value) {
                     $(this.parentElement.parentElement).d3Click();
+                    console.log(this.getAttribute('data-nome'));
+                }
             });
         })
     })
@@ -798,6 +804,15 @@ d3.custom.forceLayout = function (authors) {
       this.each(function (i, e) {
         var evt = document.createEvent("MouseEvents");
         evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+
+        e.dispatchEvent(evt);
+      });
+    };
+    
+    jQuery.fn.d3Hover = function () {
+      this.each(function (i, e) {
+        var evt = document.createEvent("MouseEvents");
+        evt.initMouseEvent("mouseenter", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
 
         e.dispatchEvent(evt);
       });

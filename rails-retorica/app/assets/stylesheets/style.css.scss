@@ -188,6 +188,10 @@ svg {
         border-left: 0px;
         width: 150px;
         border-color: $l_color;
+        border-style: solid;
+    }
+    input:focus {
+        outline: 0;
     }
     .input-group-addon {
         background-color: transparent;
