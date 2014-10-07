@@ -213,7 +213,7 @@ d3.custom.forceLayout = function (authors) {
         })
     
     
-    var typeahead = $('input').typeahead({
+    var typeahead = $('.typeahead').typeahead({
       name: 'deputados',
       local: inputData
     })
@@ -374,6 +374,13 @@ d3.custom.forceLayout = function (authors) {
         })
 
     function closeTopics (d,i){
+        
+        /*d3.select('.depCircleG')
+            .attr({
+                class: 'caralhows'
+            })*/
+        
+        $('.depCircleG').attr('class','depCircleG');
         
         
         d3.select('.name')
@@ -743,11 +750,31 @@ d3.custom.forceLayout = function (authors) {
             d3.select(this).selectAll('.depCircleG').each(function(){
                 if(this.getAttribute('data-nome') == data.value) {
                     $(this.parentElement.parentElement).d3Click();
-                    console.log(this.getAttribute('data-nome'));
+                    var n = this.parentElement.childNodes.length;
+                    for (i = 0; i < n; i++) {
+                        if (this.getAttribute('data-nome') != this.parentElement.childNodes.item(i).getAttribute('data-nome'))
+                            this.parentElement.childNodes.item(i).setAttribute('class', 'depCircleG opaque');
+                    }
                 }
             });
         })
     })
+    typeahead.on('typeahead:autocompleted',function(e,data){
+        cGroups.each(function(d,i) {            
+            d3.select(this).selectAll('.depCircleG').each(function(){
+                if(this.getAttribute('data-nome') == data.value) {
+                    $(this.parentElement.parentElement).d3Click();
+                    var n = this.parentElement.childNodes.length;
+                    for (i = 0; i < n; i++) {
+                        if (this.getAttribute('data-nome') != this.parentElement.childNodes.item(i).getAttribute('data-nome'))
+                            this.parentElement.childNodes.item(i).setAttribute('class', 'depCircleG opaque');
+                    }
+                }
+            });
+        })
+    })
+    
+    
   
   
     function colorize(d) {
@@ -809,16 +836,17 @@ d3.custom.forceLayout = function (authors) {
       });
     };
     
-    jQuery.fn.d3Hover = function () {
-      this.each(function (i, e) {
-        var evt = document.createEvent("MouseEvents");
-        evt.initMouseEvent("mouseenter", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    function tog(v){return v?'addClass':'removeClass';} 
 
-        e.dispatchEvent(evt);
-      });
-    };
-  
-
+    $(document).on('input', '.typeahead', function() {
+        $(this)[tog(this.value)]('x');
+    }).on('mousemove', '.x', function(e) {
+        $(this)[tog(this.offsetWidth-25 < e.clientX-this.getBoundingClientRect().left)]('onX');   
+    }).on('click', '.onX', function(){
+        $(this).removeClass('x onX').val('').change();
+        $('.typeahead').typeahead('setQuery', '');
+    });
+    
     function collide(node) {
       var r = node.r + 16,
           nx1 = node.x - r,
