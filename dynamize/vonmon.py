@@ -240,6 +240,10 @@ def main(argv):
     # Lookup documents
     lookup = {
         'conteudo_stemmed': {'$exists': True},
+        '$and': [
+            {'deputy_id': {'$exists': True}},
+            {'deputy_id': {'$ne': None}},
+        ],
     }
 
     if args.phases and args.phases != '*':
