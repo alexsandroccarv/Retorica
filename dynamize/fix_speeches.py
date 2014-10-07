@@ -4,20 +4,12 @@ from __future__ import unicode_literals
 import re
 import sys
 import argparse
-import unicodedata
 
 import pandas
 import pymongo
-import unihandecode
 from clint.textui import puts, progress
 
-
-def transliterate_like_rails(string):
-    # XXX FIXME Is this enough like Rails' version?
-    # Convert to ASCII and back to Unicode
-    string = unicodedata.normalize('NFKC', string)
-    string = unihandecode.unidecode(string)
-    return string.encode('ascii', 'replace').decode('utf-8')
+from common import transliterate_like_rails
 
 
 def strip_deputy_name(name):
@@ -32,19 +24,6 @@ def strip_deputy_name(name):
     name = re.sub(r'\s+-.*$', '', name)
 
     return name
-
-
-def find_deputy_by_transliterated_name(collection, name):
-    # XXX FIXME should be atomic!
-    deputy = collection.find_one({'nome_parlamentar': name})
-
-    if deputy is None:
-        # Try again with some transliteration
-        # This happens to a guy named ANDRÉ -something
-        name = transliterate_like_rails(name)
-        deputy = collection.find_one({'nome_parlamentar': name})
-
-    return deputy
 
 
 def main(argv):

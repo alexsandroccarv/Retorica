@@ -10,12 +10,7 @@ import pandas
 import pymongo
 from clint.textui import puts
 
-
-def transliterate_like_rails(string, replacement='?'):
-    # XXX FIXME Is this enough like Rails' version?
-    # Convert to ASCII and back to Unicode
-    string = unicodedata.normalize('NFKD', string)
-    return string.encode('ascii', 'replace').decode('utf-8')
+from common import transliterate_like_rails
 
 
 def parameterize_like_rails(string, sep='-'):

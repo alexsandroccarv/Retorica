@@ -4,20 +4,10 @@ from __future__ import unicode_literals
 import re
 import sys
 import argparse
-import unicodedata
 
 import pandas
 import pymongo
-import unihandecode
 from clint.textui import puts, progress
-
-
-def transliterate_like_rails(string):
-    # XXX FIXME Is this enough like Rails' version?
-    # Convert to ASCII and back to Unicode
-    string = unicodedata.normalize('NFKC', string)
-    string = unihandecode.unidecode(string)
-    return string.encode('ascii', 'replace').decode('utf-8')
 
 
 def main(argv):

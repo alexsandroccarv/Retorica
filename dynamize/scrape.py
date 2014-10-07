@@ -31,12 +31,14 @@ def main(argv):
 
     parser.add_argument('-H', '--host', type=unicode, default='localhost')
     parser.add_argument('-P', '--port', type=int, default=27017)
-    parser.add_argument('-d', '--database', type=unicode, default='retorica_development')
+    parser.add_argument('-d', '--database', type=unicode, default='retorica')
+    parser.add_argument('-c', '--collection', type=unicode, default='speeches')
 
     args = parser.parse_args(argv[1:])
 
     mongo = pymongo.MongoClient(args.host, args.port)
     database = getattr(mongo, args.database)
+    collection = getattr(database, args.collection)
 
     service_url = 'http://www.camara.gov.br/SitCamaraWS/SessoesReunioes.asmx?wsdl'
 

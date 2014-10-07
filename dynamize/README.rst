@@ -98,26 +98,10 @@ words. Again, call it with your database connection information.
 
     python stemmer.py -H 192.168.1.5
 
+..
 
-gendocs.py
-----------
-
-You would think that now that we have stemmed our documents we could go ahead
-and generate a result, right? Well, not quite yet. First we need to pull
-*some* documents from the database and save them into a file. Why? Don't ask
-me why, just do it.
-
-.. code:: bash
-
-    python gendocs.py -H 192.168.1.5 mydocuments.json
-
-The generated file will contain one tuple of speaker and speech per line,
-dumped as a JSON Array. You can give `gendocs.py` some arguments to filter
-stuff out by date or *session phase*.
-
-    **TODO FIXME**: We should really cut this step and pull the documents
-    directly from the database. Also, we should list available phases somehow,
-    so the user can decide what to filter.
+    **TODO FIXME**: We could remove this step if we could merge this process
+    into either `scrape.py` or `vonmon.py`.
 
 
 vonmon.py
@@ -137,14 +121,21 @@ for the maximum document frequency (`--maxdf`). This will instruct the system
 to ignore words used too often and words that are too infrequent. Tune the
 values depending on your input and how many documents you're processing.
 
+You can give `vonmon.py` some arguments to filter stuff out by date or
+*session phase*. Use the `--help` parameter to find out available options.
+
+
 .. code:: bash
 
-    python vonmon.py mydocuments.json --mindf=0.002 --maxdf=0.3
+    python vonmon.py -H 192.168.1.5 --mindf=0.002 --maxdf=0.3
 
 Note that this will take quite some time and quite some memory, depending on
 how many documents you're processing. If everything work out, a bunch of
 `.csv` files will be generated inside the folder specified by `-o`. Go have a
 look at them.
+
+    **TODO FIXME**: Also, we should list available phases somehow,
+    so the user can decide what to filter.
 
 
 finallyaresult.py
