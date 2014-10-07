@@ -56,7 +56,7 @@ Now that we have everything we need it's time to install some *eggs*!
 
 .. code:: bash
 
-    pip install clint iso8601 pymongo suds pyth rpy2 nltk numpy pandas Cython numexpr
+    pip install unihandecode clint iso8601 pymongo suds pyth rpy2 nltk numpy pandas Cython numexpr
     pip install scipy scikit-learn tables
 
 Note that apparently, the installation has to be done in two steps. Or

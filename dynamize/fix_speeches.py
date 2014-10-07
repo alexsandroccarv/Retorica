@@ -8,13 +8,15 @@ import unicodedata
 
 import pandas
 import pymongo
+import unihandecode
 from clint.textui import puts, progress
 
 
-def transliterate_like_rails(string, replacement='?'):
+def transliterate_like_rails(string):
     # XXX FIXME Is this enough like Rails' version?
     # Convert to ASCII and back to Unicode
-    string = unicodedata.normalize('NFKD', string)
+    string = unicodedata.normalize('NFKC', string)
+    string = unihandecode.unidecode(string)
     return string.encode('ascii', 'replace').decode('utf-8')
 
 
@@ -32,7 +34,7 @@ def strip_deputy_name(name):
     return name
 
 
-def find_deputy_by_name(collection, name):
+def find_deputy_by_transliterated_name(collection, name):
     # XXX FIXME should be atomic!
     deputy = collection.find_one({'nome_parlamentar': name})
 
@@ -61,8 +63,11 @@ def main(argv):
     speeches = progress.bar(speeches, expected_size=database.discursos.count())
 
     for s in speeches:
-        s['author_clean'] = strip_deputy_name(s['autor'])
-        deputy = find_deputy_by_name(database.deputados, s['author_clean'])
+        s['author_clean'] = transliterate_like_rails(strip_deputy_name(s['autor']))
+
+        deputy = database.deputados.find_one({
+            'clean_name': s['author_clean'],
+        })
 
         x = database.discursos.update({'_id': s['_id']}, {
             '$set': {
@@ -70,8 +75,6 @@ def main(argv):
                 'deputy_id': deputy['_id'] if deputy else None,
             },
         })
-
-        import pdb; pdb.set_trace()
 
 
 if __name__ == '__main__':
