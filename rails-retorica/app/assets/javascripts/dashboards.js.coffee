@@ -39,6 +39,8 @@ doTheThing = root.doTheThing = (source) ->
         if d.deputado
 
           r.author = d.deputado.nome_parlamentar
+          r.situacao = d.deputado.situacao
+          r.sexo = d.deputado.sexo
           r.url = d.deputado.site_deputado
           r.email = d.deputado.email
           r.foto = d.deputado.foto_url

@@ -590,7 +590,14 @@ d3.custom.forceLayout = function (authors) {
                             d3.select('.info .name')
                                 .text(d2.author)
                             d3.select('.info .part')
-                                .text(d2.partido + '/' + d2.uf)
+                                .text(function(){
+                                debugger
+                                if (d2.partido === undefined || d2.uf === undefined) {
+                                    return ''
+                                } else {
+                                    return d2.partido + '/' + d2.uf
+                                }
+                            })
                             d3.select('.info .email')
                                 .text(function(){
                                     if (d2.email == 'NA') {
@@ -600,10 +607,33 @@ d3.custom.forceLayout = function (authors) {
                                     }
                                 })
                             d3.select('.info .site')
+                                .text(function(){
+                                    if (d2.url === undefined) {
+                                        return ''
+                                    }
+                                    if (d2.situacao != "Em Exercício")
+                                    {
+
+                                        return 'Deputado nao está exercício'
+
+                                    }
+                                     else {
+
+                                        if (d2.sexo == "M")
+                                        {
+                                            return 'Site do Deputado'
+                                        }
+                                        else
+                                        {
+                                            return 'Site da Deputada'
+                                        }
+
+                                    }
+                                })
+
                                 .attr({
                                     href: d2.url
                                 })
-                                .text('Site')
                         })
 
                 }
