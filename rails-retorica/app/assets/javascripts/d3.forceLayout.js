@@ -38,7 +38,15 @@ d3.custom.forceLayout = function (authors) {
                 inputData.push(d.author)
             }
         })
-    })   
+    })
+    
+    var anos = [];
+    var qtd_anos = 1899;
+    
+    for(i = 0; i <= 114; i++) {
+        qtd_anos += 1;
+        anos.push(String(qtd_anos));
+    }
 
     var w = $(window).width(),
         h = 1100,
@@ -217,6 +225,18 @@ d3.custom.forceLayout = function (authors) {
       name: 'deputados',
       local: inputData
     })
+    
+    var anos = $('.anos').typeahead({
+      name: 'anos',
+      local: anos
+    })
+    
+    $('.anos').on("click", function () {
+        ev = $.Event("keydown");
+        ev.keyCode = ev.which = 40;
+        $(this).trigger(ev);
+        return true;
+    });
       
 
     topicLabel.style({
