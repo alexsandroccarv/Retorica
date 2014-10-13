@@ -29,6 +29,9 @@ d3.custom.forceLayout = function (authors) {
     $('.dropdown-menu a').click(function() {
         $('.ano .label').text($(this).text());
     });
+    
+    if($('.dropdown-menu a').text() == "")
+        $('.dropdown-menu').remove();
 
     d3.select('.inputContainer')
         .style({
