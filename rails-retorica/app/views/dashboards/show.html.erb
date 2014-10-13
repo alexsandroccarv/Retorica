@@ -32,10 +32,23 @@
   <div id="triangle">
 
   </div>
-    <div class="input-group margin-bottom-sm ano">        
-        <input class="anos" type="text" placeholder="Ano">
-        <span class="input-group-addon"><i class="fa fa-caret-down fa-fw"></i></span>
-      </div>
+    <div class="dropdown ano">
+      <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
+        <span class="label"><%= @dashboard.title %></span>
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+        <% Dashboard.nin(_id: [@dashboard.id]).each do |dashboard| %>
+          <li role="presentation"><a role="menuitem" tabindex="-1" href="<%= url_for dashboard %>"><%= dashboard.title %></a></li>
+        <% end %>
+      </ul>
+    </div>
+    <!--<div class="ano-dropdown">
+        <div class="input-group margin-bottom-sm ano">        
+            <input class="anos" type="text" placeholder="Ano">
+            <span class="input-group-addon"><i class="fa fa-caret-down fa-fw"></i></span>
+        </div>
+    </div>-->
   <svg id="main">
   </svg>
 

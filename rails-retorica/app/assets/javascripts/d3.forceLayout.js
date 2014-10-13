@@ -22,7 +22,13 @@ d3.custom.forceLayout = function (authors) {
 
     var color_h = "#e9a30d";
     var color_m = "#6d9c66";
-    var color_s = "#409f89";  
+    var color_s = "#409f89"; 
+    
+    $('.dropdown-menu').css('min-width', String($('.ano').width()) + 'px');
+    
+    $('.dropdown-menu a').click(function() {
+        $('.ano .label').text($(this).text());
+    });
 
     d3.select('.inputContainer')
         .style({
@@ -40,13 +46,13 @@ d3.custom.forceLayout = function (authors) {
         })
     })
     
-    var anos = [];
+    /*var anos = [];
     var qtd_anos = 1899;
     
     for(i = 0; i <= 114; i++) {
         qtd_anos += 1;
         anos.push(String(qtd_anos));
-    }
+    }*/
 
     var w = $(window).width(),
         h = 1100,
@@ -226,10 +232,10 @@ d3.custom.forceLayout = function (authors) {
       local: inputData
     })
     
-    var anos = $('.anos').typeahead({
+    /*var anos = $('.anos').typeahead({
       name: 'anos',
       local: anos
-    })
+    })*/
     
     $('.anos').on("click", function () {
         ev = $.Event("keydown");
