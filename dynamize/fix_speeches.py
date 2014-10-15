@@ -12,20 +12,6 @@ from clint.textui import puts, progress
 from common import transliterate_like_rails
 
 
-def strip_deputy_name(name):
-    # strip AKIRA OTSUBO (PRESIDENTE)
-    name = re.sub(r'\s*\([^\)]+\)\s*$', '', name)
-
-    # strip ALGUEM, ALGUMA COISA
-    name = re.sub(r'\s*,.*$', '', name)
-
-    # strip ALGUEM - PARLAMENTAR JOVEM
-    # but don't touch AKIRA-TO
-    name = re.sub(r'\s+-.*$', '', name)
-
-    return name
-
-
 def main(argv):
     parser = argparse.ArgumentParser()
 

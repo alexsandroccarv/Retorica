@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import re
+import os.path
 import sys
 import argparse
 import unicodedata
@@ -40,15 +41,7 @@ def strip_deputy_name(name):
 
 
 def find_deputy_by_name(collection, name):
-    # XXX FIXME should be atomic!
-    deputy = collection.find_one({'nome_parlamentar': name})
-
-    if deputy is None:
-        # Try again with some transliteration
-        # This happens to a guy named ANDRÉ -something
-        name = transliterate_like_rails(name)
-        deputy = collection.find_one({'nome_parlamentar': name})
-
+    clean_name = transliterate_like_rails(name)
     return deputy
 
 
@@ -68,7 +61,7 @@ def main(argv):
     result = os.path.join(args.results_folder, 'result.csv')
     result = pandas.read_csv(result, index_col=0, encoding='utf-8')
 
-    topics = os.path.join(args.results_folder, 'words.csv')
+    topics = os.path.join(args.results_folder, 'topics.csv')
     topics = pandas.read_csv(topics, header=None, index_col=0, encoding='utf-8')
 
     rs = os.path.join(args.results_folder, 'rs.csv')
@@ -89,12 +82,12 @@ def main(argv):
         title = row.name
         observ = ignore = False
 
-        if title.startswith('/'):
-            title = title.strip('/')
+        if title.startswith('//'):
+            title = title.lstrip('/')
             observ = True
 
-        if title.startswith('__'):
-            title = title.strip('__')
+        if title.startswith('^^'):
+            title = title.lstrip('^')
             ignore = True
 
         topic_id = database.topics.insert({
@@ -115,20 +108,25 @@ def main(argv):
         topic_id = topic_idx_to_id[topic_idx]
 
         stripped_name = strip_deputy_name(name)
+        clean_name= transliterate_like_rails(stripped_name)
 
         # XXX FIXME shouldn't this be atomic?
-        deputy = find_deputy_by_name(database.deputados, stripped_name)
+        deputy = database.deputados.find_one({
+            '$or': [
+                {'clean_name': clean_name},
+                {'nome_parlamentar': stripped_name},
+            ],
+        })
 
         database.emphases.insert({
             'name': name,
+            'clean_name': clean_name,
             'stripped_name': stripped_name,
             'emphasis': emphasis,
             'topic_id': topic_id,
             'deputado_id': deputy['_id'] if deputy else None,
         })
 
-    #for row in (result.irow(i) for i in range(rs.shape[0])):
-    #    emphasis
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv) or 0)
