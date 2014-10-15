@@ -8,22 +8,9 @@ import logging
 import os.path
 import argparse
 
-import pymongo
 import suds
-from clint.textui import puts as puts_ascii
-
-
-def puts(*args, **kwargs):
-    args = map(lambda x: x.encode('utf-8'), args)
-    return puts_ascii(*args, **kwargs)
-
-
-def get_basic_logger(logger=None, level=logging.INFO):
-    if logger is None:
-        logger = __name__
-    logger = logging.getLogger(logger)
-    logger.setLevel(level)
-    return logger
+import pymongo
+from clint.textui import indent, puts
 
 
 def ensure_iterator(obj):
@@ -34,36 +21,38 @@ def ensure_iterator(obj):
     return iter(iterable)
 
 
+def readabledate(dt):
+    return dt.strftime('%Y/%m/%d')
+
+
 def main(argv):
-    logger = get_basic_logger()
 
     parser = argparse.ArgumentParser()
+
     parser.add_argument('-H', '--host', type=unicode, default='localhost')
     parser.add_argument('-P', '--port', type=int, default=27017)
-    parser.add_argument('-d', '--database', type=unicode, default='retorica_development')
+    parser.add_argument('-d', '--database', type=unicode, default='retorica')
+    parser.add_argument('-c', '--collection', type=unicode, default='speeches')
 
     args = parser.parse_args(argv[1:])
 
-    mongo_client = pymongo.MongoClient(args.host, args.port)
-    database = getattr(mongo_client, args.database)
+    mongo = pymongo.MongoClient(args.host, args.port)
+    database = getattr(mongo, args.database)
+    collection = getattr(database, args.collection)
 
-    service_url = 'http://www.camara.gov.br/SitCamaraWS\SessoesReunioes.asmx?wsdl'
+    service_url = 'http://www.camara.gov.br/SitCamaraWS/SessoesReunioes.asmx?wsdl'
 
     client = suds.client.Client(service_url, cachingpolicy=1)
 
-    cache_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cache'))
-    client.set_options(cache=suds.cache.FileCache(location=cache_file))
-
+    # Date format used by the service
     date_format = '%d/%m/%Y'
 
     # A data inicial dos discursos
     start_date = datetime.date(2011, 2, 2)
 
-    # Tamanho do bloco (em dias)
+    # Chunk size in days
+    # Note that the service only accepts chunks of 360 days max
     chunk_size = datetime.timedelta(days=360)
-
-    # O serviço existe que a diferença entre as datas iniciais e finais seja de no
-    # máximo 360 dias. Pegaremos, por tanto, os dados em pedaços.
 
     sd = start_date
     today = datetime.date.today()
@@ -73,8 +62,8 @@ def main(argv):
     while sd <= today:
         ed = min(sd + chunk_size, today)
 
-        puts('Obtendo discursos do período entre {sd} e {ed}'.format(
-            sd=sd.strftime(date_format), ed=ed.strftime(date_format)))
+        puts('Obtaining speeches given between {sd} and {ed}'.format(
+            sd=readabledate(sd), ed=readabledat(ed)))
 
         sessoes = client.service.ListarDiscursosPlenario(
             dataIni=sd.strftime(date_format), dataFim=ed.strftime(date_format))
@@ -131,12 +120,16 @@ def main(argv):
                     if not database.discursos.find_one({'wsid': wsid}):
                         puts('Obtendo discurso {0}'.format(wsid))
 
-                        teor = client.service.obterInteiroTeorDiscursosPlenario(
-                            codSessao=sessao.codigo.strip(),
-                            numOrador=discurso.orador.numero,
-                            numQuarto=discurso.numeroQuarto,
-                            numInsercao=discurso.numeroInsercao,
-                        )
+                        try:
+                            teor = client.service.obterInteiroTeorDiscursosPlenario(
+                                codSessao=sessao.codigo.strip(),
+                                numOrador=discurso.orador.numero,
+                                numQuarto=discurso.numeroQuarto,
+                                numInsercao=discurso.numeroInsercao,
+                            )
+                        except:
+                            puts("Failed to get {0}".format(wsid))
+                            continue
 
                         teor = teor.sessao
 

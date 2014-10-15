@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import re
+import os.path
 import sys
 import argparse
 import unicodedata
@@ -10,12 +11,7 @@ import pandas
 import pymongo
 from clint.textui import puts
 
-
-def transliterate_like_rails(string, replacement='?'):
-    # XXX FIXME Is this enough like Rails' version?
-    # Convert to ASCII and back to Unicode
-    string = unicodedata.normalize('NFKD', string)
-    return string.encode('ascii', 'replace').decode('utf-8')
+from common import transliterate_like_rails
 
 
 def parameterize_like_rails(string, sep='-'):
@@ -44,6 +40,11 @@ def strip_deputy_name(name):
     return name
 
 
+def find_deputy_by_name(collection, name):
+    clean_name = transliterate_like_rails(name)
+    return deputy
+
+
 def main(argv):
     parser = argparse.ArgumentParser()
 
@@ -53,13 +54,18 @@ def main(argv):
 
     parser.add_argument('-t', '--title', type=unicode)
 
-    parser.add_argument('result_file', type=argparse.FileType('r'))
-    parser.add_argument('topics_file', type=argparse.FileType('r'))
+    parser.add_argument('results_folder', type=unicode, help='Path to the results folder')
 
     args = parser.parse_args(argv[1:])
 
-    result = pandas.read_csv(args.result_file, index_col=0, encoding='utf-8')
-    topics = pandas.read_csv(args.topics_file, header=None, index_col=0, encoding='utf-8')
+    result = os.path.join(args.results_folder, 'result.csv')
+    result = pandas.read_csv(result, index_col=0, encoding='utf-8')
+
+    topics = os.path.join(args.results_folder, 'topics.csv')
+    topics = pandas.read_csv(topics, header=None, index_col=0, encoding='utf-8')
+
+    rs = os.path.join(args.results_folder, 'rs.csv')
+    rs = pandas.read_csv(rs, index_col=0, encoding='utf-8')
 
     mongo = pymongo.MongoClient(args.host, args.port)
     database = getattr(mongo, args.database)
@@ -76,12 +82,12 @@ def main(argv):
         title = row.name
         observ = ignore = False
 
-        if title.startswith('/'):
-            title = title.strip('/')
+        if title.startswith('//'):
+            title = title.lstrip('/')
             observ = True
 
-        if title.startswith('__'):
-            title = title.strip('__')
+        if title.startswith('^^'):
+            title = title.lstrip('^')
             ignore = True
 
         topic_id = database.topics.insert({
@@ -102,24 +108,25 @@ def main(argv):
         topic_id = topic_idx_to_id[topic_idx]
 
         stripped_name = strip_deputy_name(name)
+        clean_name= transliterate_like_rails(stripped_name)
 
-        # XXX FIXME should be atomic!
-        deputado = database.deputados.find_one({'nome_parlamentar': stripped_name})
-        id_deputado = deputado['_id'] if deputado else None
-
-        if id_deputado is None:
-            # Try again with some transliteration
-            # This happens to a guy named ANDRÉ -something
-            stripped_name = transliterate_like_rails(stripped_name)
-            id_deputado = deputado['_id'] if deputado else None
+        # XXX FIXME shouldn't this be atomic?
+        deputy = database.deputados.find_one({
+            '$or': [
+                {'clean_name': clean_name},
+                {'nome_parlamentar': stripped_name},
+            ],
+        })
 
         database.emphases.insert({
             'name': name,
+            'clean_name': clean_name,
             'stripped_name': stripped_name,
             'emphasis': emphasis,
             'topic_id': topic_id,
-            'deputado_id': id_deputado,
+            'deputado_id': deputy['_id'] if deputy else None,
         })
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv) or 0)
