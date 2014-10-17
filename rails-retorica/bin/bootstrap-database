@@ -78,7 +78,8 @@ deputados_hash.each do |deputado|
         :nome_parlamentar => nome_parlamentar,
         :sexo => sexo,
         :email => email,
-        :situacao => situacao
+        :situacao => situacao,
+        :clean_name => ActiveSupport::Inflector::transliterate(nome_parlamentar).strip
       )
 
       url_foto = "http://www.camara.gov.br/internet/deputado/bandep/#{ide_cadastro}.jpg"
