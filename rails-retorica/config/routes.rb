@@ -7,9 +7,6 @@ Retorica::Application.routes.draw do
     collection { get :first }
   end
 
-  resources :deputados, :except => [:new, :create, :edit, :delete] do
-    collection { get :import }
-    collection { get :discursos }
-  end
+  resources :deputados, :except => [:new, :create, :edit, :delete]
 
 end
