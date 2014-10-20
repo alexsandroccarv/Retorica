@@ -24,6 +24,11 @@ doTheThing = root.doTheThing = (source) ->
     topics = topics.filter (d) ->
       (not d.ignore) and d.title.indexOf("Solenidades") != 0
 
+    # XXX FIXME ROFL LOL WTF
+    # Some topics have no emphases and nobody doesnt know why or how.
+    topics = topics.filter (d) ->
+      d.emphases?.length > 0
+
     topics = topics.map (d, i) ->
 
       emphases = _(d.emphases)
