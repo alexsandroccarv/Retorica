@@ -242,7 +242,8 @@ d3.custom.forceLayout = function(authors) {
       'text-anchor': 'middle'
     })
     .style({
-      fill: '#30524d'
+      fill: '#30524d',
+      'text-align': 'center'
     })
     .style('font-size', function(d, i) {
       return String(d.r / 4) + 'px';
@@ -433,6 +434,9 @@ d3.custom.forceLayout = function(authors) {
         .attr({
             class: 'caralhows'
         })*/
+      
+      
+    $('.typeahead').val.bind('asdf');
 
     $('.depCircleG').attr('class', 'depCircleG');
 
@@ -854,6 +858,63 @@ d3.custom.forceLayout = function(authors) {
       });
     });
   });
+    
+    $('.typeahead').bind("change paste keyup", function(e,data) {
+        var value = $(this).val();
+        var suggestions = [];
+        $('span.tt-suggestions .tt-suggestion').each(function() {
+            suggestions.push($(this).text());
+        });
+
+        var n = suggestions.length;
+
+        cGroups.each(function(d,i) {  
+            var result = false;
+            d3.select(this).selectAll('.depCircleG').each(function(){
+                for(i = 0; i < n; i++) {
+                    if(this.getAttribute('data-nome') == suggestions[i]) {
+                        result = true;
+                    }
+                }                
+            });
+            if (result != true) {
+                var sel = d3.select(this)
+                sel.selectAll('.topicCircle')
+                    .attr('class','topicCircle opaque')
+
+                sel.select('.topicLabel')
+                    .attr('class','topicLabel opaque')
+
+            } else {
+                var sel = d3.select(this)
+                sel.selectAll('.topicCircle')
+                    .attr('class','topicCircle')
+                
+                sel.select('.topicLabel')
+                    .attr('class','topicLabel')
+
+
+            }
+
+            if (value == "") {
+                var sel = d3.select(this)
+                sel.selectAll('.topicCircle')
+                    .attr('class','topicCircle')
+                
+                sel.select('.topicLabel')
+                    .attr('class','topicLabel')
+
+
+            }           
+
+        })
+
+        if (n == 0 && value) {
+            $('.search-result').css('display','block');
+        } else {
+            $('.search-result').css('display','none');
+        }
+    });
 
   function colorize(d) {
     n = (parseInt(d.r));
