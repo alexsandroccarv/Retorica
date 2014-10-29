@@ -9,8 +9,10 @@
 <div class="popover2"><span class="nome">ABELARDO CAMARINHA</span>
   <div class="tick"></div>
 </div>
-<div>
+<div class="row no-gutter">
+  <div class="col-md-3 full-height">
   <div class="content-description">
+    <div class="logo"><%= image_tag("logo.png", :width => "80px") %></div>
     <h1 class="title">Retórica Parlamentar</h1>  
     <div class="description">
       <div class="info">
@@ -28,35 +30,35 @@
         <input class="typeahead" type="text" placeholder="Buscar">
       </div>
     </div>
-  </div>
-  <div id="triangle">
-
-  </div>
-    <div class="dropdown ano">
-      <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
-         <span class="label"><%= @dashboard.title %></span>
-        <span class="caret"></span>
-      </button>
-      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-        <% Dashboard.nin(_id: [@dashboard.id]).each do |dashboard| %>
-          <li role="presentation"><a role="menuitem" tabindex="-1" href="<%= url_for dashboard %>"><%= dashboard.title %></a></li>
-        <% end %>
-      </ul>
+    <div class="foot">
+    <p>Análise estatística e temática dos discursos feita por <a href="http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K4220296U3">Davi Moreira</a> e <a href="https://sites.google.com/site/galdinomcz/">Manoel Galdino</a>. Visualização dos dados por <a href="http://luiscarli.com">Luis Carli</a>. e pela equipe do Laboratório Hacker da Câmara dos Deputados</p>
+    <p>Esse projeto faz uso do <a href="http://www.r-project.org">software R</a> e das bibliotecas <a href="http://d3js.org">d3.js</a> e <a href="http://lodash.com">lodash.js</a></p>
     </div>
+  </div>    
     <!--<div class="ano-dropdown">
         <div class="input-group margin-bottom-sm ano">        
             <input class="anos" type="text" placeholder="Ano">
             <span class="input-group-addon"><i class="fa fa-caret-down fa-fw"></i></span>
         </div>
-    </div>-->
-  <svg id="main">
-  </svg>
-
-  <div class="foot">
-    <p>Análise estatística e temática dos discursos feita por <a href="http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K4220296U3">Davi Moreira</a> e <a href="https://sites.google.com/site/galdinomcz/">Manoel Galdino</a>. Visualização dos dados por <a href="http://luiscarli.com">Luis Carli</a>. e pela equipe do Laboratório Hacker da Câmara dos Deputados</p>
-    <p>Esse projeto faz uso do <a href="http://www.r-project.org">software R</a> e das bibliotecas <a href="http://d3js.org">d3.js</a> e <a href="http://lodash.com">lodash.js</a></p>
-  </div>
+    </div>-->   
+    </div>
+    <div class="col-md-9 no-float">
+    <svg id="main">
+    </svg>
+    </div> 
 </div>
+<div class="dropdown ano">
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
+     <span class="label"><%= @dashboard.title %></span>
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+    <% Dashboard.nin(_id: [@dashboard.id]).each do |dashboard| %>
+      <li role="presentation"><a role="menuitem" tabindex="-1" href="<%= url_for dashboard %>"><%= dashboard.title %></a></li>
+    <% end %>
+  </ul>
+</div>
+
 
 <script type="text/javascript">
   doTheThing("<%= dashboard_url(:id => @dashboard.id, :format => :json) %>");

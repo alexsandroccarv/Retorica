@@ -17,6 +17,7 @@ $l_color : #97debe;
 $d_bg : #05504c;
 $bg : #409f89;
 
+
 html, body {
   font-family: 'Oswald';
   font-size: 12px;
@@ -31,6 +32,22 @@ html, body {
   }
 }
 
+    
+.row.no-gutter [class*='col-']:not(:first-child),.row.no-gutter [class*='col-']:not(:last-child) {
+  padding-right:0;
+  padding-left:0;
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+
+/* only for column content visible */
+.col-lg-1>div {background-color:#ddd;}
+
+
 .typeahead{
   background: #fff image-url('close_button.png') no-repeat right -15px center;
   background-size: 10px;
@@ -41,6 +58,8 @@ html, body {
 }
 .typeahead.x  { background-position: right 10px center; } /* (jQ) Show icon */
 .typeahead.onX{ cursor: pointer; }              /* (jQ) hover cursor style */
+
+
 
 .loading {
     background-color: $d_bg;
@@ -119,9 +138,17 @@ svg {
 }
 
 .content-description {
-  position: relative;
-  z-index: 3;
-  color: $l_color;
+    background-color: $d_bg;
+    height: 100%;
+    padding: 40px;
+    text-align: justify;
+    a:hover {
+        color: $l_color;
+    }
+}
+
+.twitter-typeahead {
+    min-width: 100% !important;
 }
 
 #triangle {
@@ -152,12 +179,10 @@ svg {
 }
 
 .title {
-  color: #dea62c;
-  font-size: 30px;
-  font-weight: 400px;
-  position: absolute;
-  margin-left: 40px;
-  margin-top: 55px;
+    color: #dea62c;
+    font-size: 30px;
+    font-weight: 400px;
+    text-align: center;
 }
 
 .description2 {
@@ -165,11 +190,7 @@ svg {
 }
 
 .description, .description2 {
-  position: absolute;
-  margin-left: 40px;
-  top: 105px;
-  width: 300px;
-  line-height: 20px;
+    color: $l_color;
 }
 
 .description .headline, .description2 .headline {
@@ -204,7 +225,7 @@ svg {
         border-top-left-radius: 0px;
         border-bottom-left-radius: 0px;
         border-left: 0px;
-        width: 150px;
+        width: 100%;
         border-color: $l_color;
         border-style: solid;
         box-shadow: none;
@@ -265,11 +286,11 @@ svg {
 
 
 .foot {
-  position: absolute;
-  top: 850px;
-  margin-left: 40px;
-  margin-bottom: 80px;
-  width: 300px;
+    position: absolute;
+    bottom: 10px;
+    color: $l_color;
+    padding-right: 40px;
+    opacity: 0.5;
 }
 
 .topicLabel {

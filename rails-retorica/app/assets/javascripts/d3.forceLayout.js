@@ -56,10 +56,17 @@ d3.custom.forceLayout = function(authors) {
       anos.push(String(qtd_anos));
   }*/
 
-  var w = $(window).width(),
-    h = 1100,
+  var w = $(window).width() - $('.col-md-3').width(),
+    h = $(window).height(),
     topicCircleOpacity = 1,
     topicCircleSelOpacity = 1;
+    
+    $('.full-height').height($(window).height());
+/*    $(window).resize(function() {
+        $('.full-height').height($(document).height());
+    });*/   
+
+    
 
   var docs = _.map(authors, function(d, i) {
     return {
@@ -148,7 +155,7 @@ d3.custom.forceLayout = function(authors) {
 
   svg = svg.append('g')
     .attr({
-      transform: 'translate(60, -100)'
+      transform: 'translate(-50, 50)'
     });
 
   // Topics
@@ -419,7 +426,7 @@ d3.custom.forceLayout = function(authors) {
       force.resume();
     });
 
-  d3.select('svg#main')
+  /*d3.select('svg#main')
     .append('path')
     .attr({
       d: 'M40 96 h300'
@@ -427,7 +434,7 @@ d3.custom.forceLayout = function(authors) {
     .style({
       stroke: '#97debe',
       'stroke-width': 1
-    })
+    })*/
 
   function closeTopics(d, i) {
     /*d3.select('.depCircleG')
