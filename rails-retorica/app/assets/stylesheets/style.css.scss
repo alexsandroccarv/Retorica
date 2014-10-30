@@ -24,6 +24,10 @@ html, body {
   font-weight: 500;
   margin: 0;
   background-color: $bg;
+  max-width: 100%;
+  max-height: 100%;
+  overflow-x: hidden;
+  margin-bottom: -20px;
   a {
       color: $l_color;
       &:focus {
@@ -147,6 +151,21 @@ svg {
     }
 }
 
+#menu {
+  text-align: center;
+  margin-left: -40px;
+  font-size: 130%;
+  font-weight: bold;
+  margin-top: 20px;
+  ul { 
+    li {
+      display: inline;
+      list-style-type: none;
+      padding-right: 20px;
+    }
+  }
+}
+
 .twitter-typeahead {
     min-width: 100% !important;
 }
@@ -183,6 +202,11 @@ svg {
     font-size: 30px;
     font-weight: 400px;
     text-align: center;
+    sup {
+      font-size: 40%;
+      vertical-align: super;
+      margin-left: 5px;
+    }
 }
 
 .description2 {

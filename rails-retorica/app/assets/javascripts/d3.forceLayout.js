@@ -61,7 +61,7 @@ d3.custom.forceLayout = function(authors) {
     topicCircleOpacity = 1,
     topicCircleSelOpacity = 1;
     
-    $('.full-height').height($(window).height());
+    $('.full-height').height(h);
 /*    $(window).resize(function() {
         $('.full-height').height($(document).height());
     });*/   
