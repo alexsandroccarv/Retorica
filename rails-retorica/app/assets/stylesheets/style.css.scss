@@ -181,13 +181,24 @@ svg {
   left: 5;
 }
 
-.depG {
+.depCircleG {
   opacity: 0;
 }
 
 .opaque {
-    opacity: 0.3;
+  opacity: 0.3;
+  transition: opacity .30s ease-in-out;
+  -moz-transition: opacity .30s ease-in-out;
+  -webkit-transition: opacity .30s ease-in-out;
 }
+
+.visible {
+  opacity: 1;
+  transition: opacity .30s ease-in-out;
+  -moz-transition: opacity .30s ease-in-out;
+  -webkit-transition: opacity .30s ease-in-out;
+}
+
 
 svg {
 }
@@ -344,7 +355,7 @@ text {
 
 .depImage {
   opacity: 0;
-  display: none;
+  /*display: none;*/
 }
 
 .popover, .popover2 {

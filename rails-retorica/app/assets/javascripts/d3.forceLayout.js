@@ -159,7 +159,8 @@ d3.custom.forceLayout = function(authors) {
     });
 
   // Topics
-  var cGroups = svg.selectAll('.cGroups').data(docs)
+  var cGroups = svg
+    .selectAll('.cGroups').data(docs)
     .enter()
     .append('g')
     .attr({
@@ -390,40 +391,8 @@ d3.custom.forceLayout = function(authors) {
         d.fixed = false;
       });
 
-      sel.transition()
-        .duration(900)
-        .attrTween('transform', posTween)
-        .each('end', function(d, i) {
-          return d.fixed = true;
-        });
-
-      sel.selectAll('.topicCircle')
-        .transition()
-        .duration(900)
-        .attrTween('r', rTweenBig);
-        /*.style({
-           'fill-opacity': topicCircleSelOpacity,
-        })*/
-
-      sel.select('.topicLabel')
-        .transition()
-        .style({
-          opacity: 0
-        });
-
-      sel.selectAll('.depImage, .depG')
-        .style({
-          display: 'block'
-        })
-        .transition(100)
-        .delay(function(d, i) {
-          return 600 + i * 10;
-        })
-        .style({
-          opacity: 1
-        });
-
-      force.resume();
+      openCircle(sel);
+      
     });
 
   /*d3.select('svg#main')
@@ -492,17 +461,18 @@ d3.custom.forceLayout = function(authors) {
         opacity: 1
       });
 
-    sel.selectAll('.depImage, .depG')
-      .transition()
+    sel.selectAll('.depCircleG')
+      .attr('class','depCircleG opaque');
+      /*.transition()
       .style({
         opacity: 0
-      })
-      .each('end', function(d, i) {
+      });*/
+      /*.each('end', function(d, i) {
         d3.select(this)
           .style({
             display: 'none'
           });
-      });
+      })*/
 
     force.resume();
 
@@ -832,11 +802,16 @@ d3.custom.forceLayout = function(authors) {
   function dragstart() {
   }
 
-  typeahead.on('typeahead:selected', function(e, data) {
+/*  typeahead.on('typeahead:selected', function(e, data) {
     cGroups.each(function(d, i) {
       d3.select(this).selectAll('.depCircleG').each(function() {
         if (this.getAttribute('data-nome') == data.value) {
-          $(this.parentElement.parentElement).d3Click();
+          //$(this.parentElement.parentElement).d3Click();
+          var selected_el = d3.select(this.parentElement.parentElement);
+          
+          closeTopics(d, i);
+          openCircle(selected_el);   
+          
           var n = this.parentElement.childNodes.length;
           for (i = 0; i < n; i++) {
             var x = this.parentElement.childNodes.item(i);
@@ -847,13 +822,16 @@ d3.custom.forceLayout = function(authors) {
         }
       });
     });
-  });
+  });*/
 
   typeahead.on('typeahead:autocompleted', function(e, data) {
     cGroups.each(function(d, i) {
       d3.select(this).selectAll('.depCircleG').each(function() {
         if (this.getAttribute('data-nome') == data.value) {
-          $(this.parentElement.parentElement).d3Click();
+          
+          closeTopics(d, i);
+          openCircle(selected_el);
+          
           var n = this.parentElement.childNodes.length;
           for (i = 0; i < n; i++) {
             var x = this.parentElement.childNodes.item(i)
@@ -866,62 +844,160 @@ d3.custom.forceLayout = function(authors) {
     });
   });
     
-    $('.typeahead').bind("change paste keyup", function(e,data) {
-        var value = $(this).val();
-        var suggestions = [];
-        $('span.tt-suggestions .tt-suggestion').each(function() {
-            suggestions.push($(this).text());
-        });
+  $('.typeahead').bind("change paste keyup", function(e,data) {
 
-        var n = suggestions.length;
+    var value = $(this).val();
+    var suggestions = [];
 
-        cGroups.each(function(d,i) {  
-            var result = false;
-            d3.select(this).selectAll('.depCircleG').each(function(){
-                for(i = 0; i < n; i++) {
-                    if(this.getAttribute('data-nome') == suggestions[i]) {
-                        result = true;
-                    }
-                }                
-            });
-            if (result != true) {
-                var sel = d3.select(this)
-                sel.selectAll('.topicCircle')
-                    .attr('class','topicCircle opaque')
+    $('span.tt-suggestions .tt-suggestion').each(function() {
+      suggestions.push($(this).text().trim().toLowerCase());
+    });
 
-                sel.select('.topicLabel')
-                    .attr('class','topicLabel opaque')
+    function shouldHighlight(node) {
+      var nome = node.getAttribute('data-nome').trim().toLowerCase();
 
-            } else {
-                var sel = d3.select(this)
-                sel.selectAll('.topicCircle')
-                    .attr('class','topicCircle')
-                
-                sel.select('.topicLabel')
-                    .attr('class','topicLabel')
+      for (var i = 0; i < suggestions.length; ++i) {
+        if (nome === suggestions[i]) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    /*
+    function getClassList(node) {
+      var classes = node.getAttribute('class');
+      return classes ? classes.split(' ') : [];
+    }
+
+    function addClass(node, klass) {
+      removeClass(node, klass);
+      node.setAttribute('class', getClassList(node).concat([klass]).join(' '));
+    }
+
+    function removeClass(node, klass) {
+      node.setAttribute('class', getClassList(node).filter(function(i) { return i !== klass }).join(' '));
+    }
+
+    /*
+    d3.select('.cGroups').each(function() {
+      var hasSelection = false;
+
+      d3.select(this).selectAll('.depCircleG').each(function(d) {
+        var nome = this.getAttribute('data-nome');
+
+        // TODO FIXME descobrir pq os caras não tem nome
+        if (!nome) {
+          return;
+        }
 
 
-            }
-
-            if (value == "") {
-                var sel = d3.select(this)
-                sel.selectAll('.topicCircle')
-                    .attr('class','topicCircle')
-                
-                sel.select('.topicLabel')
-                    .attr('class','topicLabel')
-
-
-            }           
-
-        })
-
-        if (n == 0 && value) {
-            $('.search-result').css('display','block');
+        if (!shouldHighlight(this)) {
+          addClass(this, 'opaque');
         } else {
-            $('.search-result').css('display','none');
+          removeClass(this, 'opaque');
+          hasSelection = true;
+        }
+      });
+
+      if (hasSelection) {
+        removeClass(this, 'opaque');
+      } else {
+        addClass(this, 'opaque');
+      }
+    });
+    */
+
+    cGroups.each(function(d, i) {  
+        var result = false;
+        var sel = d3.select(this);
+        var depg = sel.selectAll('.depCircleG');
+        depg.each(function(d) {
+          var nome = this.getAttribute('data-nome');
+
+          if (!nome) {
+            return;
+          } else {
+            nome = nome.trim().toLowerCase();
+          }
+
+          for (i = 0; i < n; i++) {
+            if (nome === suggestions[i]) {
+              result = true;
+              /*this.setAttribute('class', 'depCircleG opaque');*/
+              return;
+            }
+            else {
+              /*this.setAttribute('class', 'depCircleG visible');*/
+            }
+          }
+        });
+      
+        if (result != true) {
+          sel.selectAll('.topicCircle').attr('class','topicCircle opaque');
+
+          sel.select('.topicLabel').attr('class','topicLabel');              
+        } else {
+            sel.selectAll('.topicCircle').attr('class','topicCircle visible');
+            sel.select('.topicLabel').attr('class','topicLabel');
+        }
+
+        if (value === "") {
+            sel.selectAll('.topicCircle').attr('class','topicCircle visible');
+
+            sel.select('.topicLabel').attr('class','topicLabel');
+          
+            depg.attr('class','depCircleG');
         }
     });
+
+    if (n == 0 && value) {
+        $('.search-result').css('display','block');
+    } else {
+        $('.search-result').css('display','none');
+    }
+  });
+  
+  function openCircle(sel) {
+    
+    sel.transition()
+        .duration(900)
+        .attrTween('transform', posTween)
+        .each('end', function(d, i) {
+          return d.fixed = true;
+        });
+
+      sel.selectAll('.topicCircle')
+        .transition()
+        .duration(900)
+        .attrTween('r', rTweenBig);
+        /*.style({
+           'fill-opacity': topicCircleSelOpacity,
+        })*/
+
+      sel.select('.topicLabel')
+        .transition()
+        .style({
+          opacity: 0
+        });
+
+      sel.selectAll('.depCircleG')
+        .attr('class','depCircleG visible');
+        /*.style({
+          display: 'block'
+        })
+        .transition(100)
+        .delay(function(d, i) {
+          return 600 + i * 10;
+        })
+        .style({
+          opacity: 1
+        });*/
+    
+    force.resume();
+    
+  }
 
   function colorize(d) {
     n = (parseInt(d.r));
