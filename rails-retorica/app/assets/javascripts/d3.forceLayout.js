@@ -105,8 +105,8 @@ d3.custom.forceLayout = function(authors) {
     .gravity(0.04)
     .nodes(docs);
 
-  var drag = force.drag()
-    .on("dragstart", dragstart);
+  // DRAGSTART DOES NOTHING?
+  var drag = force.drag().on("dragstart", function() { });
 
   force.start();
 
@@ -406,16 +406,6 @@ d3.custom.forceLayout = function(authors) {
     })*/
 
   function closeTopics(d, i) {
-    /*d3.select('.depCircleG')
-        .attr({
-            class: 'caralhows'
-        })*/
-      
-      
-    $('.typeahead').val.bind('asdf');
-
-    $('.depCircleG').attr('class', 'depCircleG');
-
     d3.select('.name').text('');
     d3.select('.part').text('');
     d3.select('.email').text('');
@@ -461,18 +451,17 @@ d3.custom.forceLayout = function(authors) {
         opacity: 1
       });
 
-    sel.selectAll('.depCircleG')
-      .attr('class','depCircleG opaque');
-      /*.transition()
+    sel.selectAll('.depImage, .depG')
+      .transition()
       .style({
         opacity: 0
-      });*/
-      /*.each('end', function(d, i) {
+      })
+      .each('end', function(d, i) {
         d3.select(this)
           .style({
             display: 'none'
           });
-      })*/
+      });
 
     force.resume();
 
@@ -799,157 +788,100 @@ d3.custom.forceLayout = function(authors) {
     depCircleG.exit().remove();
   }
 
-  function dragstart() {
+  function getClassList(node) {
+    var classes = node.getAttribute('class');
+    return classes ? classes.split(' ') : [];
   }
 
-/*  typeahead.on('typeahead:selected', function(e, data) {
-    cGroups.each(function(d, i) {
-      d3.select(this).selectAll('.depCircleG').each(function() {
-        if (this.getAttribute('data-nome') == data.value) {
-          //$(this.parentElement.parentElement).d3Click();
-          var selected_el = d3.select(this.parentElement.parentElement);
-          
-          closeTopics(d, i);
-          openCircle(selected_el);   
-          
-          var n = this.parentElement.childNodes.length;
-          for (i = 0; i < n; i++) {
-            var x = this.parentElement.childNodes.item(i);
-            if (this.getAttribute('data-nome') != x.getAttribute('data-nome')) {
-              x.setAttribute('class', 'depCircleG opaque');
-            }
-          }
-        }
-      });
-    });
-  });*/
+  function addClass(node, klass) {
+    var cl = getClassList(node).filter(function(c) { return c !== klass });
+    node.setAttribute('class', cl.concat([klass]).join(' '));
+  }
 
-  typeahead.on('typeahead:autocompleted', function(e, data) {
+  function removeClass(node, klass) {
+    var cl = getClassList(node).filter(function(i) { return i !== klass });
+    node.setAttribute('class', cl.join(' '));
+  }
+
+  /**
+   * TODO Por enquanto isso vai ficar assim mesmo. Mas o ideal seria que,
+   * quando um resultado fosse selecionado, todas as outras bolhas ficassem
+   * "opacas", e apenas a bolha selecionada (e a fotinha selecionada) ficassem
+   * "destacadas".
+   */
+  typeahead.on('typeahead:selected typeahead:autocompleted', function(e, data) {
     cGroups.each(function(d, i) {
       d3.select(this).selectAll('.depCircleG').each(function() {
         if (this.getAttribute('data-nome') == data.value) {
-          
+          var selected_el = d3.select(this.parentElement.parentElement);
           closeTopics(d, i);
           openCircle(selected_el);
-          
-          var n = this.parentElement.childNodes.length;
-          for (i = 0; i < n; i++) {
-            var x = this.parentElement.childNodes.item(i)
-            if (this.getAttribute('data-nome') != x.getAttribute('data-nome')) {
-              x.setAttribute('class', 'depCircleG opaque');
-            }
-          }
         }
       });
     });
   });
     
-  $('.typeahead').bind("change paste keyup", function(e,data) {
+  $('.typeahead').bind("change paste keyup", function(e, data) {
 
     var value = $(this).val();
     var suggestions = [];
+
 
     $('span.tt-suggestions .tt-suggestion').each(function() {
       suggestions.push($(this).text().trim().toLowerCase());
     });
 
     function shouldHighlight(node) {
-      var nome = node.getAttribute('data-nome').trim().toLowerCase();
-
-      for (var i = 0; i < suggestions.length; ++i) {
-        if (nome === suggestions[i]) {
-          return true;
-        }
-      }
-
-      return false;
+      var nome = node.getAttribute('data-nome');
+      return nome && suggestions.indexOf(nome.trim().toLowerCase()) >= 0;
     }
 
-    /*
-    function getClassList(node) {
-      var classes = node.getAttribute('class');
-      return classes ? classes.split(' ') : [];
+    if (!value || value === '') {
+      d3.selectAll('.cGroups').each(function() {
+        addClass(this, 'visible');
+        removeClass(this, 'opaque');
+
+        d3.select(this).selectAll('.depCircleG').each(function() {
+          addClass(this, 'visible');
+          removeClass(this, 'opaque');
+        });
+      });
+      return;
     }
 
-    function addClass(node, klass) {
-      removeClass(node, klass);
-      node.setAttribute('class', getClassList(node).concat([klass]).join(' '));
-    }
+    d3.selectAll('.cGroups').each(function() {
+      var hasHighlightedChild = false;
 
-    function removeClass(node, klass) {
-      node.setAttribute('class', getClassList(node).filter(function(i) { return i !== klass }).join(' '));
-    }
-
-    /*
-    d3.select('.cGroups').each(function() {
-      var hasSelection = false;
-
-      d3.select(this).selectAll('.depCircleG').each(function(d) {
-        var nome = this.getAttribute('data-nome');
-
-        // TODO FIXME descobrir pq os caras não tem nome
-        if (!nome) {
+      d3.select(this).selectAll('.depCircleG').each(function() {
+        var name = this.getAttribute('data-nome');
+        
+        // TODO FIXME descobrir porque alguns caras não tem nome
+        if (!name) {
           return;
         }
 
-
         if (!shouldHighlight(this)) {
+          // If the item should not be highlighted, we add this
+          // opaque class to them.
           addClass(this, 'opaque');
+          removeClass(this, 'visible');
         } else {
+          // Items are automatically highlighted. Just remove the
+          // opaque class from them as a good measure.
+          addClass(this, 'visible');
           removeClass(this, 'opaque');
-          hasSelection = true;
+
+          hasHighlightedChild = true;
         }
       });
 
-      if (hasSelection) {
-        removeClass(this, 'opaque');
-      } else {
+      if (!hasHighlightedChild) {
         addClass(this, 'opaque');
+        removeClass(this, 'visible');
+      } else {
+        addClass(this, 'visible');
+        removeClass(this, 'opaque');
       }
-    });
-    */
-
-    cGroups.each(function(d, i) {  
-        var result = false;
-        var sel = d3.select(this);
-        var depg = sel.selectAll('.depCircleG');
-        depg.each(function(d) {
-          var nome = this.getAttribute('data-nome');
-
-          if (!nome) {
-            return;
-          } else {
-            nome = nome.trim().toLowerCase();
-          }
-
-          for (i = 0; i < n; i++) {
-            if (nome === suggestions[i]) {
-              result = true;
-              /*this.setAttribute('class', 'depCircleG opaque');*/
-              return;
-            }
-            else {
-              /*this.setAttribute('class', 'depCircleG visible');*/
-            }
-          }
-        });
-      
-        if (result != true) {
-          sel.selectAll('.topicCircle').attr('class','topicCircle opaque');
-
-          sel.select('.topicLabel').attr('class','topicLabel');              
-        } else {
-            sel.selectAll('.topicCircle').attr('class','topicCircle visible');
-            sel.select('.topicLabel').attr('class','topicLabel');
-        }
-
-        if (value === "") {
-            sel.selectAll('.topicCircle').attr('class','topicCircle visible');
-
-            sel.select('.topicLabel').attr('class','topicLabel');
-          
-            depg.attr('class','depCircleG');
-        }
     });
 
     if (n == 0 && value) {
@@ -960,7 +892,6 @@ d3.custom.forceLayout = function(authors) {
   });
   
   function openCircle(sel) {
-    
     sel.transition()
         .duration(900)
         .attrTween('transform', posTween)
@@ -982,9 +913,8 @@ d3.custom.forceLayout = function(authors) {
           opacity: 0
         });
 
-      sel.selectAll('.depCircleG')
-        .attr('class','depCircleG visible');
-        /*.style({
+      sel.selectAll('.depImage, .depG')
+        .style({
           display: 'block'
         })
         .transition(100)
@@ -993,10 +923,9 @@ d3.custom.forceLayout = function(authors) {
         })
         .style({
           opacity: 1
-        });*/
-    
+        });
+
     force.resume();
-    
   }
 
   function colorize(d) {
