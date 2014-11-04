@@ -48,33 +48,39 @@ d3.custom.forceLayout = function(authors) {
     });
   });
 
-  /*var anos = [];
-  var qtd_anos = 1899;
-    
-  for(i = 0; i <= 114; i++) {
-      qtd_anos += 1;
-      anos.push(String(qtd_anos));
-  }*/
+  
 
   var w = $(window).width() - $('.col-md-3').width(),
-    h = $(window).height(),
+    h = $(document).height(),
     topicCircleOpacity = 1,
     topicCircleSelOpacity = 1;
     
-    $('.full-height').height(h);
+    $('.content-description').css('min-height', h);
 /*    $(window).resize(function() {
         $('.full-height').height($(document).height());
     });*/   
 
-    
-
   var docs = _.map(authors, function(d, i) {
     return {
+      id: d.id,
       topic: d.topic,
       value: d.value
     };
   });
-
+  
+  /** LINKS **/
+  
+  var count = 0;
+  
+  _.each(docs, function(d, i) {    
+    count++;
+    if (count <= parseInt(docs.length/2))
+      $('#col_1').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');
+    else
+      $('#col_2').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');    
+  });  
+  
+  
   var rScale = d3.scale.linear()
     .domain(d3.extent(docs, function(d, i) {
       return d.value;
@@ -164,7 +170,10 @@ d3.custom.forceLayout = function(authors) {
     .enter()
     .append('g')
     .attr({
-      'class': 'cGroups'
+      'class': 'cGroups',
+      'data-id': function(d, i) {
+        return d.id;
+      }
     })
     .style({
       cursor: 'pointer'
@@ -359,7 +368,7 @@ d3.custom.forceLayout = function(authors) {
 
       closeTopics(d, i);
 
-      d3.select('.name')
+/*      d3.select('.name')
         .text(d.topic);
 
       d3.select('.intro')
@@ -372,9 +381,11 @@ d3.custom.forceLayout = function(authors) {
             .style({
               display: 'none'
             })
-        });
+        });*/
 
       var sel = d3.select(this);
+    
+      console.log(sel);
 
       cGroups.filter(function(d, i) {
           return d.fixed == true;
@@ -410,6 +421,31 @@ d3.custom.forceLayout = function(authors) {
     d3.select('.part').text('');
     d3.select('.email').text('');
     d3.select('.site').text('');
+    
+    d3.select('.temas')
+      .transition()
+      .style({
+        opacity: 0
+      })
+      .each("end", function() {
+        d3.select('.temas')
+          .style({
+            display: 'none'
+          });
+      });
+    
+    d3.select('.sobre')
+      .transition()
+      .style({
+        opacity: 0
+      })
+      .each("end", function() {
+        d3.select('.sobre')
+          .style({
+            display: 'none'
+          });
+      });
+    
     d3.select('.intro')
       .transition()
       .style({
@@ -619,6 +655,30 @@ d3.custom.forceLayout = function(authors) {
         }
 
         d3.event.stopPropagation();
+        
+        d3.select('.intro')
+          .transition()
+          .style({
+            opacity: 0
+          })
+          .each("end", function() {
+            d3.select('.intro')
+              .style({
+                display: 'none'
+              })
+          });
+        
+        d3.select('.sobre')
+          .transition()
+          .style({
+            opacity: 0
+          })
+          .each("end", function() {
+            d3.select('.sobre')
+              .style({
+                display: 'none'
+              });
+          });
 
         if (d2.author != d3.select('.name').text()) {
           d3.select('.info')
@@ -628,6 +688,9 @@ d3.custom.forceLayout = function(authors) {
             })
             .each("end", function() {
               d3.select('.info')
+                .style({
+                  display: 'block'
+                })
                 .transition()
                 .style({
                   opacity: 1
@@ -802,6 +865,83 @@ d3.custom.forceLayout = function(authors) {
     var cl = getClassList(node).filter(function(i) { return i !== klass });
     node.setAttribute('class', cl.join(' '));
   }
+  
+  $('.logo, .title').click(function(d, i) {
+    closeTopics(d,i);
+  })
+  
+  $('#temas').click(function(e) {
+    e.preventDefault();
+    d3.select('.intro')
+        .transition()
+        .style({
+          opacity: 0
+        })
+        .each("end", function() {
+          d3.select('.intro')
+            .style({
+              display: 'none'
+            })
+          d3.select('.temas')
+            .transition()
+            .style({
+              display: 'block'
+            })
+            .each("end", function() {
+              d3.select('.temas')
+                .transition()
+                .style({
+                  opacity: 1
+                })
+            });
+        });
+  });
+  
+  $('#sobre').click(function(e) {
+    e.preventDefault();
+    d3.select('.info')
+      .transition()
+          .style({
+            opacity: 0
+          })
+          .each("end", function() {
+            d3.select('.info')
+              .style({
+                display: 'none'
+              });
+          });
+            
+    d3.select('.intro')
+        .transition()
+        .style({
+          opacity: 0
+        })
+        .each("end", function() {
+          d3.select('.intro')
+            .style({
+              display: 'none'
+            })
+          d3.select('.sobre')
+            .transition()
+            .style({
+              display: 'block'
+            })
+            .each("end", function() {
+              d3.select('.sobre')
+                .transition()
+                .style({
+                  opacity: 1
+                })
+            });
+        });
+  });
+  
+  $('.temas a').click(function(e, d, i) {
+    e.preventDefault();
+    sel = d3.select('[data-id="' + String($(this).attr('id')) + '"]');
+    closeTopics(d, i);
+    openCircle(sel);      
+  });
 
   /**
    * TODO Por enquanto isso vai ficar assim mesmo. Mas o ideal seria que,
@@ -816,6 +956,12 @@ d3.custom.forceLayout = function(authors) {
           var selected_el = d3.select(this.parentElement.parentElement);
           closeTopics(d, i);
           openCircle(selected_el);
+          for (i = 0; i < n; i++) {
+            var x = this.parentElement.childNodes.item(i);
+            if (this.getAttribute('data-nome') != x.getAttribute('data-nome')) {
+              x.setAttribute('class', 'depCircleG opaque');
+            }
+          }
         }
       });
     });
@@ -892,7 +1038,7 @@ d3.custom.forceLayout = function(authors) {
   });
   
   function openCircle(sel) {
-    sel.transition()
+      sel.transition()
         .duration(900)
         .attrTween('transform', posTween)
         .each('end', function(d, i) {
@@ -972,10 +1118,8 @@ d3.custom.forceLayout = function(authors) {
   }
 
   function tick(docs) {
-    if (typeof(pcx[parseInt(docs.y)]) != "undefined" && typeof(pcy[parseInt(docs.x)]) != "undefined") {
-      docs.x = Math.max(docs.r - 62, Math.min((w - 58) - docs.r, docs.x));
-      docs.y = Math.max(docs.r + 98 - pcy[parseInt(docs.x)], Math.min((h + 102) - docs.r, docs.y));
-    }
+      docs.x = Math.max(docs.r + 52, Math.min((w + 42) - docs.r, docs.x));
+      docs.y = Math.max(docs.r - 50, Math.min((h - 52) - docs.r, docs.y));
   }
 
   jQuery.fn.d3Click = function() {

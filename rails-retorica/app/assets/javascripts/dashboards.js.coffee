@@ -66,6 +66,7 @@ doTheThing = root.doTheThing = (source) ->
       emphases = emphases.value()
 
       return {
+        id: d._id["$oid"],
         topic: d.title
         value: d3.sum(emphases, (d, i) -> d.value)
         children: emphases

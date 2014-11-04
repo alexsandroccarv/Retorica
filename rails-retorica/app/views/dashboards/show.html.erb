@@ -15,12 +15,9 @@
     <div class="logo"><%= image_tag("logo.png") %></div>
     <h1 class="title">Retórica Parlamentar<sup>beta</sup></h1>  
     <div class="description">
-      <div id="menu">
-        <ul>
-          <li id="active"><a href="#" id="current">Sobre</a></li>
-          <li><a href="#">Amostra</a></li>
-          <li><a href="#">Temas</a></li>
-        </ul>
+      <div class="input-group margin-bottom-sm busca">
+        <span class="input-group-addon"><i class="fa fa-search fa-fw"></i></span>
+        <input class="typeahead" type="text" placeholder="Buscar deputados">
       </div>
       <div class="info">
         <h3 class="name"></h3>
@@ -28,17 +25,24 @@
         <p class="email"></p>
         <a href="http://www.mozilla.com/" target="_blank" class="site"></a>
       </div>
+      <div class="row temas">
+        <h3>Temas</h3>
+        <div class="col-md-6" id="col_1">
+        </div>
+        <div class="col-md-6" id="col_2">
+        </div>
+      </div>
+      <div class="row sobre">
+        <h3>Sobre o Retórica Parlamentar</h3>
+        <p class="detail">Fixie Carles flannel aesthetic. Craft beer squid fap taxidermy PBR kogi farm-to-table pour-over cliche locavore. Tonx actually mixtape, quinoa kale chips keffiyeh roof party squid disrupt yr. Gentrify authentic cray Brooklyn roof party pork belly, pop-up distillery taxidermy mlkshk Odd Future beard Wes Anderson chillwave. Shabby chic skateboard tote bag, cred next level distillery forage American Apparel. DIY dreamcatcher Pinterest paleo tote bag, blog hoodie wayfarers. XOXO gentrify health goth irony, cliche meh viral biodiesel.</p>
+      </div>
       <div class="intro">
-        <p class="headline">Visualização da ênfase temática dos deputados brasileiros durante seus discursos.</p>
+        <p class="headline">Visualização da ênfase por <a id="temas" class="in-link" href="#">temas</a> dos deputados brasileiros durante seus discursos.</p>
         <p class="detail">Dos mais de 84 mil discursos proferidos por deputados levantamos os 70 principais temas e quais os deputados mais relacionados com cada um deles.</p>
-      </div>
-      <div class="input-group margin-bottom-sm busca">
-        <span class="input-group-addon"><i class="fa fa-search fa-fw"></i></span>
-        <input class="typeahead" type="text" placeholder="Buscar">
-      </div>
+      </div>      
     </div>
     <div class="foot">
-    <p>Análise estatística e temática dos discursos feita por <a href="http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K4220296U3">Davi Moreira</a> e <a href="https://sites.google.com/site/galdinomcz/">Manoel Galdino</a>. Visualização dos dados por <a href="http://luiscarli.com">Luis Carli</a>. e pela equipe do Laboratório Hacker da Câmara dos Deputados</p>
+    <p>Análise estatística e temática dos discursos feita por <a href="http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K4220296U3">Davi Moreira</a> e <a href="https://sites.google.com/site/galdinomcz/">Manoel Galdino</a>. Visualização dos dados por <a href="http://luiscarli.com">Luis Carli</a>. e pela equipe do Laboratório Hacker da Câmara dos Deputados. <a id="sobre" class="in-link" href="#">Saiba mais sobre</a></p>
     <p>Esse projeto faz uso do <a href="http://www.r-project.org">software R</a> e das bibliotecas <a href="http://d3js.org">d3.js</a> e <a href="http://lodash.com">lodash.js</a></p>
     </div>
   </div>    
