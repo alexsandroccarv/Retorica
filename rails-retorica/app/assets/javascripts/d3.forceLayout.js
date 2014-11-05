@@ -127,7 +127,8 @@ d3.custom.forceLayout = function(authors) {
       height: h
     })
     .style({
-      fill: 'transparent'
+      fill: 'transparent',
+      'min-height': '815px'
     });
 
   // Defs
@@ -910,6 +911,18 @@ d3.custom.forceLayout = function(authors) {
                 display: 'none'
               });
           });
+    
+    d3.select('.temas')
+      .transition()
+          .style({
+            opacity: 0
+          })
+          .each("end", function() {
+            d3.select('.temas')
+              .style({
+                display: 'none'
+              });
+          });
             
     d3.select('.intro')
         .transition()
@@ -1119,7 +1132,7 @@ d3.custom.forceLayout = function(authors) {
 
   function tick(docs) {
       docs.x = Math.max(docs.r + 52, Math.min((w + 42) - docs.r, docs.x));
-      docs.y = Math.max(docs.r - 50, Math.min((h - 52) - docs.r, docs.y));
+      docs.y = Math.max(docs.r - 50, Math.min(($('svg#main').height() - 52) - docs.r, docs.y));
   }
 
   jQuery.fn.d3Click = function() {
