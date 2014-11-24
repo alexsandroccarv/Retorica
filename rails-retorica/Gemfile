@@ -1,4 +1,5 @@
 source 'https://rubygems.org'
+source 'https://rails-assets.org'
 
 ruby '2.1.2'
 
@@ -22,8 +23,10 @@ gem 'jquery-ui-rails'
 gem 'bootstrap-sass', '~> 3.1.1.1'
 gem 'd3_rails', '~> 3.4.11'
 gem 'lodash-rails', '~> 2.4.1'
-
 gem 'jquery-rails'
+
+# Bower packages through rails-assets
+gem 'rails-assets-sprintf'
 
 #JSON Path Handling
 gem 'jsonpath'

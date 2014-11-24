@@ -3,6 +3,7 @@ class Dashboard
 
   field :title, type: String
   field :slug, type: String
+  field :description, type: String
 
   has_many :topics
 

@@ -48,8 +48,6 @@ d3.custom.forceLayout = function(authors) {
     });
   });
 
-  
-
   var w = $(window).width() - $('.col-md-3').width(),
     h = $(document).height(),
     topicCircleOpacity = 1,

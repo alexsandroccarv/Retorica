@@ -1,6 +1,7 @@
 #= require d3
 #= require lodash
 #= require d3.forceLayout
+#= require sprintf
 
 # Quick hack to export a function to the *global* namespace so
 # that it can be called from within script blocks
@@ -62,7 +63,6 @@ doTheThing = root.doTheThing = (source) ->
 
         return r
 
-      #emphases = emphases.sortBy( (r)-> r.value )
       emphases = emphases.value()
 
       return {
@@ -73,5 +73,17 @@ doTheThing = root.doTheThing = (source) ->
       }
 
     topics = topics.value()
+
+    details = null
+
+    if not data.description
+      details = data.title
+    else
+      sdata = {topic_count: topics.length}
+      details = sprintf(data.description, sdata)
+
+    console.log(details)
+
+    d3.select('.intro .detail').text(details)
 
     d3.custom.forceLayout(topics)
