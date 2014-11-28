@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
+import base64
 from StringIO import StringIO as BytesIO
 
 import xmltodict
+from scrapy import log
 from scrapy.http import Request
 from scrapy.contrib.pipeline.files import FilesPipeline, FileException
 from scrapy.utils.misc import md5sum
-
 from scrapy_mongodb import MongoDBPipeline as OldStyleMongoDBPipeline
+
+from kingsnake.utils.vonmon import stemmify_text, strip_deputy_name
 
 
 # XXX MongoDBPipeline isn't a new-style class. I find that so unacceptable that
@@ -17,6 +21,21 @@ MongoDBPipeline = type(
     (object,),
     dict(OldStyleMongoDBPipeline.__dict__),
 )
+
+
+_null = object()
+
+
+def item_is_speech(item):
+    """Dumb method to guess if the given *item* is a Speech
+    """
+    return item.get('sessao', _null) is not _null
+
+
+def item_is_session(item):
+    """Dumb method to guess if the given *item* is a Session
+    """
+    return item.get('codigo', _null) is not _null
 
 
 class ItemSpecificPipeline(object):
@@ -58,8 +77,7 @@ class DiscursosMongoDBPipeline(ItemSpecificPipeline,
     collection_name = 'discursos'
 
     def should_process_item(self, item, spider):
-        # If it has a session, it must be a speech
-        return item.get('sessao', self.null) is not self.null
+        return item_is_speech(item)
 
 
 class SessoesMongoDBPipeline(ItemSpecificPipeline,
@@ -69,8 +87,7 @@ class SessoesMongoDBPipeline(ItemSpecificPipeline,
     collection_name = 'sessoes'
 
     def should_process_item(self, item, spider):
-        # If it has a code, it must be a session
-        return item.get('codigo', self.null) is not self.null
+        return item_is_session(item)
 
 
 class RetryException(Exception):
@@ -119,12 +136,8 @@ class RetryMediaPipelineMixin(object):
 
 class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
 
-    null = object()
-
     def should_process_item(self, item, spider):
-        # If it doesn't have a session its not a speech it has no content to
-        # download
-        return item.get('sessao', self.null) is not self.null
+        return item_is_session(item)
 
     def get_media_requests(self, item, info):
 
@@ -142,11 +155,16 @@ class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
 
     def file_downloaded(self, response, request, info):
 
+        # The downloaded file is a XML file which stores the actual RTF file as
+        # a base64 encoded string. Here we extract and decode that value.
+
         path = self.file_path(request, response=response, info=info)
 
         rdata = xmltodict.parse(response.body)
 
         content = rdata.get('sessao').get('discursoRTFBase64')
+
+        content = base64.b64decode(content)
 
         buf = BytesIO(content)
 
@@ -162,7 +180,45 @@ class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
+        # XXX Original `file_path` implementation appends the request's query
+        # string into the file name, and we don't like that, so we're
+        # overriding it and hacking around it.
         path = super(TeorDiscursoPipeline, self).file_path(request,
                                                            response, info)
         fname, ext = path.split('.', 1)
         return '.'.join([fname, 'rtf'])
+
+
+class VonmonPipeline(object):
+
+    def should_process_item(self, item, spider):
+        return item_is_session(item)
+
+    def process_item(self, item, spider):
+        if not self.should_process_item(item, spider):
+            return item
+
+        try:
+            item['vonmon'] = self._do_process_item(item)
+        except Exception as e:
+            spider.log('Failed to stemmify speech: {0}'.format(e), log.ERROR)
+
+        return item
+
+    def _do_process_item(self, item):
+        filepath = item.get('files')[0].get('path')
+        filepath = os.path.join(self.settings.get('FILES_STORE'), filepath)
+
+        with open(filepath, 'rb') as rtf:
+            text = extract_text_from_rtf_document(rtf)
+
+        stemmed = stemmify_text(text)
+
+        author = item.get('orador').get('nome')
+        author = transliterate_like_rails(author)
+        author = strip_deputy_name(author)
+
+        return {
+            'author': author,
+            'stemmed': stemmed,
+        }

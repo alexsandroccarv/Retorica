@@ -33,3 +33,13 @@ class RandomUserAgentMiddleware(object):
             #'Cache-Control': 'no-cache',
             'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4',
         })
+
+        request.headers.update({
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Pragma': 'no-cache',
+            'Cookie': '__utma=260181407.86875399.1416311980.1416311980.1416333000.2; __utmz=260181407.1416333000.2.2.utmcsr=labhackercd.net|utmccn=(referral)|utmcmd=referral|utmcct=/; BALANCEID=mycluster.node1'
+        })

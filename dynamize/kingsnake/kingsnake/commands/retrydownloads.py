@@ -5,8 +5,7 @@ import os
 from scrapy.command import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
-
-from kingsnake.pipelines import DiscursosMongoDBPipeline
+from kingsnake.utils import speech_collection_from_command
 
 
 class Command(ScrapyCommand):
@@ -63,16 +62,11 @@ class Command(ScrapyCommand):
 
     def _start_urls(self, crawler):
         # XXX To get the start urls, we'll query every document with missing
-        # files from the MongoDB database. We do that through our pipeline's
-        # connection because we can.
-        class Struct(object): pass
+        # files in the database. We do that through our pipeline's connection
+        # *just because we can*.
+        collection = speech_collection_from_command(self)
 
-        crawler = Struct()
-        crawler.settings = self.crawler_process.settings
-
-        pl = DiscursosMongoDBPipeline(crawler)
-
-        speeches = pl.collection.find({
+        speeches = collection.find({
             '$or': [
                 {'files': {'$exists': False}},
                 {'files': []},
