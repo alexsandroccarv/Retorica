@@ -18,20 +18,20 @@ NUM_LEGISLATURA = '54'
 url = "http://www.camara.leg.br/internet/Deputado/DeputadosXML.zip"
 
 # Salvando o arquivo dos deputados
-open('public/deputados.zip', 'wb') do |file|
+open('../public/deputados.zip', 'wb') do |file|
   file << open(url).read
 
   # Extraindo os arquivos
   Zip::File.open(file) do |zip_file|
     zip_file.each do |entry|
-      entry.extract("public/deputados.xml") unless File.exists?("public/deputados.xml")
+      entry.extract("../public/deputados.xml") unless File.exists?("../public/deputados.xml")
     end
   end
 end
 
 # Abrindo arquivo Hash
 # Obtendo os deputados da 54ª legislatura (precisa ser melhorado depois)
-hash = Hash.from_xml(File.open('public/deputados.xml', "r:UTF-8"))
+hash = Hash.from_xml(File.open('../public/deputados.xml', "r:UTF-8"))
 
 # Navegando na estrutura
 deputados_hash = hash['orgao']['Deputados']['Deputado']
