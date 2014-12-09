@@ -279,7 +279,7 @@ DEPENDENCIES
   savon (~> 2.3.0)
   simple_form
   smarter_csv
-  therubyracer (= 0.10.2)
+  therubyracer
   thin
   turbolinks
   uglifier (>= 1.0.3)

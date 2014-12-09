@@ -43,7 +43,7 @@ gem 'jbuilder', '~> 1.0.1'
 gem  'google-webfonts-rails'
 
 # Development
-gem 'therubyracer', '0.10.2', :platforms => :ruby
+gem 'therubyracer', :group => :development
 gem 'better_errors'
 
 #CSV
@@ -75,7 +75,7 @@ gem 'nokogiri'
 # gem 'unicorn'
 
 # Deploy with Capistrano
-# gem 'capistrano', group: :development
+# gem 'capistrano', :group => :development
 
 # To use debugger
 #gem 'debugger'
