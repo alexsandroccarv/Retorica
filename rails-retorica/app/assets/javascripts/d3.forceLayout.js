@@ -332,7 +332,7 @@ d3.custom.forceLayout = function(authors) {
       popover.style({
         opacity: 1,
         left: (rect.left - rectPop.width / 2 + d.r) + 'px',
-        top: ((d.y - 95) + d.r) + 'px'
+        top: (d.y + 80) + 'px'
       });
 
       popover.select('.tick')
@@ -383,8 +383,6 @@ d3.custom.forceLayout = function(authors) {
         });*/
 
       var sel = d3.select(this);
-    
-      console.log(sel);
 
       cGroups.filter(function(d, i) {
           return d.fixed == true;
@@ -555,7 +553,6 @@ d3.custom.forceLayout = function(authors) {
 
     while (++i < n) {
       q.visit(collide(docs[i]));
-      tick(docs[i]);
     }
 
     cGroups
@@ -603,9 +600,11 @@ d3.custom.forceLayout = function(authors) {
           */
       })
       .on('mouseover', function(d2, i) {
+
         if (!d.fixed) {
           return;
         }
+
         d3.select(this).select('.depCircle')
           .style({
             'stroke-width': 4,
@@ -796,9 +795,6 @@ d3.custom.forceLayout = function(authors) {
 
     depCircleG.attr({
         transform: function(d, i) {
-          if (isNaN(d.x) || isNaN(d.y)) {
-            debugger;
-          }
           return 'translate(' + d.x + ',' + d.y + ')';
         }
       })
@@ -1126,11 +1122,6 @@ d3.custom.forceLayout = function(authors) {
         pcy.push(ny);
       }
     }
-  }
-
-  function tick(docs) {
-      docs.x = Math.max(docs.r + 52, Math.min((w + 42) - docs.r, docs.x));
-      docs.y = Math.max(docs.r - 50, Math.min(($('svg#main').height() - 52) - docs.r, docs.y));
   }
 
   jQuery.fn.d3Click = function() {

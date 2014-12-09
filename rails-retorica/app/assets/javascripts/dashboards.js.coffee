@@ -25,11 +25,6 @@ doTheThing = root.doTheThing = (source) ->
     topics = topics.filter (d) ->
       (not d.ignore) and d.title.indexOf("Solenidades") != 0
 
-    # XXX FIXME ROFL LOL WTF
-    # Some topics have no emphases and nobody doesnt know why or how.
-    topics = topics.filter (d) ->
-      d.emphases?.length > 0
-
     topics = topics.map (d, i) ->
 
       emphases = _(d.emphases)
@@ -50,16 +45,9 @@ doTheThing = root.doTheThing = (source) ->
           r.url = d.deputado.site_deputado
           r.email = d.deputado.email
           r.foto = d.deputado.foto_url
-          r.uf = d.deputado.unidade_federativa[0].sigla
-          r.partido = d.deputado.partidos[0].sigla
+          r.uf = d.deputado.unidade_federativa[0]?.sigla
+          r.partido = d.deputado.partidos[0]?.sigla
 
-          #r.foto = d.deputado.
-          #if (d.deputado.foto)
-          #  r['foto'] = d.deputado.foto.url;
-          #r.uf = d.deputado.unidade_federativa
-          #r['uf'] = d.deputado.u.url;
-          #//r['partido'] = d.deputado.foto.url;
-          #r['email'] = d.deputado.email;
 
         return r
 
@@ -81,8 +69,6 @@ doTheThing = root.doTheThing = (source) ->
     else
       sdata = {topic_count: topics.length}
       details = sprintf(data.description, sdata)
-
-    console.log(details)
 
     d3.select('.intro .detail').text(details)
 
