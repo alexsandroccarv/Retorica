@@ -20,10 +20,18 @@ doTheThing = root.doTheThing = (source) ->
 
     topics = _(data.topics)
 
-    item_id_counter = 0
-
     topics = topics.filter (d) ->
       (not d.ignore) and d.title.indexOf("Solenidades") != 0
+
+    # XXX FIXME ROFL LOL WTF Some topics have no emphases and nobody doesn't
+    # know why or how. This is be causin' all sorts of trouble, like a bunch
+    # of errors about images, <g>s and <node>s. So, please, please, don't
+    # remove this if you are not really, really sure about what you're doing.
+    # Thanks.
+    topics = topics.filter (d) ->
+      d.emphases?.length > 0
+
+    item_id_counter = 0
 
     topics = topics.map (d, i) ->
 
