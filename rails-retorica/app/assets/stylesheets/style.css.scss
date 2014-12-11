@@ -60,6 +60,15 @@ button:focus {
   text-align: left;
   display: none;
   opacity: 0;
+
+  table tr td {
+    padding-bottom: 0.7em;
+    vertical-align: top;
+
+    &:first {
+      padding-right: 0.25em;
+    }
+  }
 }
 
 .sobre {
