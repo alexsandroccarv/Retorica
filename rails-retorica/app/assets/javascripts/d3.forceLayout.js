@@ -72,13 +72,10 @@ d3.custom.forceLayout = function(authors) {
     return d.topic;
   });
 
-  var count = 0;
+  // FIXME TODO this should really be a table.
   _.each(temas, function(d, i) {    
-    count++;
-    if (count <= parseInt(docs.length/2))
-      $('#col_1').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');
-    else
-      $('#col_2').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');    
+    var col = (i % 2 === 0) ? 'first' : 'last';
+    $('.row .temas > div:' + col).append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');
   });  
 
   var rScale = d3.scale.linear()
