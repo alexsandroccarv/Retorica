@@ -894,42 +894,6 @@ d3.custom.forceLayout = function(authors) {
         });
   });
 
-  d3.select('.temas')
-    .transition()
-    .style({
-      opacity: 0
-    })
-    .each("end", function() {
-      d3.select('.temas')
-      .style({
-        display: 'none'
-      });
-    });
-
-  d3.select('.intro')
-    .transition()
-    .style({
-      opacity: 0
-    })
-    .each("end", function() {
-      d3.select('.intro')
-      .style({
-        display: 'none'
-      })
-      d3.select('.sobre')
-      .transition()
-      .style({
-        display: 'block'
-      })
-      .each("end", function() {
-        d3.select('.sobre')
-        .transition()
-        .style({
-          opacity: 1
-        })
-      });
-    });
-  
   $('.temas a').click(function(e, d, i) {
     e.preventDefault();
     sel = d3.select('[data-id="' + String($(this).attr('id')) + '"]');
