@@ -55,6 +55,10 @@ button:focus {
   margin-top: 20px;
 }
 
+.github {
+  text-align: center;
+}
+
 .temas {
   margin-left: 0px;
   text-align: left;
@@ -403,7 +407,9 @@ svg {
     bottom: 10px;
     color: $yellow;
     padding-right: 40px;
-    opacity: 0.5;
+    p {
+      opacity: 0.7;
+    }
 }
 
 .topicLabel {
