@@ -3,7 +3,7 @@ Retorica::Application.routes.draw do
 
   root :to => redirect('dashboards/first')
 
-  get '/about' => 'welcome#about'
+  get '/about' => 'welcome#about', :as => 'about'
 
   resources :dashboards, :except => [:new, :create, :edit, :update, :destroy] do
     collection { get :first }

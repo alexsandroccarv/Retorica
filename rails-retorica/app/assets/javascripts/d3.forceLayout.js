@@ -891,57 +891,42 @@ d3.custom.forceLayout = function(authors) {
             });
         });
   });
-  
-  $('#sobre').click(function(e) {
-    e.preventDefault();
-    d3.select('.info')
+
+  d3.select('.temas')
+    .transition()
+    .style({
+      opacity: 0
+    })
+    .each("end", function() {
+      d3.select('.temas')
+      .style({
+        display: 'none'
+      });
+    });
+
+  d3.select('.intro')
+    .transition()
+    .style({
+      opacity: 0
+    })
+    .each("end", function() {
+      d3.select('.intro')
+      .style({
+        display: 'none'
+      })
+      d3.select('.sobre')
       .transition()
-          .style({
-            opacity: 0
-          })
-          .each("end", function() {
-            d3.select('.info')
-              .style({
-                display: 'none'
-              });
-          });
-    
-    d3.select('.temas')
-      .transition()
-          .style({
-            opacity: 0
-          })
-          .each("end", function() {
-            d3.select('.temas')
-              .style({
-                display: 'none'
-              });
-          });
-            
-    d3.select('.intro')
+      .style({
+        display: 'block'
+      })
+      .each("end", function() {
+        d3.select('.sobre')
         .transition()
         .style({
-          opacity: 0
+          opacity: 1
         })
-        .each("end", function() {
-          d3.select('.intro')
-            .style({
-              display: 'none'
-            })
-          d3.select('.sobre')
-            .transition()
-            .style({
-              display: 'block'
-            })
-            .each("end", function() {
-              d3.select('.sobre')
-                .transition()
-                .style({
-                  opacity: 1
-                })
-            });
-        });
-  });
+      });
+    });
   
   $('.temas a').click(function(e, d, i) {
     e.preventDefault();
