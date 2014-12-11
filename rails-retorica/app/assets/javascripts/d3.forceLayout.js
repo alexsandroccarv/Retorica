@@ -72,11 +72,17 @@ d3.custom.forceLayout = function(authors) {
     return d.topic;
   });
 
-  // FIXME TODO this should really be a table.
-  _.each(temas, function(d, i) {    
-    var col = (i % 2 === 0) ? 'first' : 'last';
-    $('.row .temas > div:' + col).append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');
-  });  
+  temas = _.groupBy(temas, function(d, i) { return Math.floor(i / 2); });
+
+  _.each(temas, function(d, i) {
+    var row = $('<tr>');
+
+    row.appendTo($('.temas.row table tbody'));
+
+    _.each(d, function(d, i) {
+      row.append('<td><a id="' + d.id + '" href="#">' + d.topic + '</a></td>');
+    });
+  });
 
   var rScale = d3.scale.linear()
     .domain(d3.extent(docs, function(d, i) {
