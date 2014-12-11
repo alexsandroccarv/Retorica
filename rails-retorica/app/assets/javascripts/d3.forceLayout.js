@@ -68,17 +68,19 @@ d3.custom.forceLayout = function(authors) {
   
   /** LINKS **/
   
+  var temas = _.sortBy(docs, function(d) {
+    return d.topic;
+  });
+
   var count = 0;
-  
-  _.each(docs, function(d, i) {    
+  _.each(temas, function(d, i) {    
     count++;
     if (count <= parseInt(docs.length/2))
       $('#col_1').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');
     else
       $('#col_2').append('<p><a id=' + d.id + ' href="#">' + d.topic + '</a></p>');    
   });  
-  
-  
+
   var rScale = d3.scale.linear()
     .domain(d3.extent(docs, function(d, i) {
       return d.value;
