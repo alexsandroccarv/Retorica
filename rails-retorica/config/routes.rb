@@ -5,10 +5,10 @@ Retorica::Application.routes.draw do
 
   get '/about' => 'welcome#about'
 
-  resources :dashboards, :except => [:new, :create, :edit, :delete] do
+  resources :dashboards, :except => [:new, :create, :edit, :update, :destroy] do
     collection { get :first }
   end
 
-  resources :deputados, :except => [:new, :create, :edit, :delete]
+  resources :deputados, :except => [:new, :create, :update, :destroy]
 
 end
