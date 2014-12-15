@@ -86,7 +86,6 @@ button:focus {
 .logo {
   text-align: center;
   margin-bottom: 20px;
-  width: 300px;
   margin-left: auto;
   margin-right: auto;
   //cursor: pointer;
@@ -283,6 +282,14 @@ svg {
 svg {
 }
 
+img.selo {
+  width: 80px;
+  margin-bottom: 10px;
+}
+
+.selo {
+}
+
 .container {
   /*width: 1200px;*/
   margin: 0px;
@@ -294,11 +301,10 @@ svg {
     font-weight: 400px;
     text-align: center;
     cursor: pointer;
-    sup {
-      font-size: 40%;
-      vertical-align: super;
-      margin-left: 5px;
-    }
+}
+
+sup {
+  margin-left: 5px;
 }
 
 .description2 {
@@ -403,13 +409,23 @@ svg {
 
 
 .foot {
-    position: absolute;
-    bottom: 10px;
+  text-align: center;
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  color: $yellow;
+  padding-right: 70px;  
+  p {
+    opacity: 0.7;
+  }  
+  a {
+    margin-top: 20px;
+    font-size: 1.5em;
     color: $yellow;
-    padding-right: 40px;
-    p {
-      opacity: 0.7;
+    &:hover {
+      text-decoration: none;
     }
+  }
 }
 
 .topicLabel {
