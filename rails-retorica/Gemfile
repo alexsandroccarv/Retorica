@@ -1,10 +1,10 @@
 source 'https://rubygems.org'
 source 'https://rails-assets.org'
 
-ruby '2.1.2'
+ruby '2.2.0'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.1.5'
+gem 'rails', '4.2.0'
 
 #Mongo
 gem 'mongoid'
@@ -82,4 +82,8 @@ gem 'nokogiri'
 gem 'thin'
 gem 'i18n'
 gem 'byebug'
+
+
+# To use respond_to
+gem 'responders', '~> 2.0'
 
