@@ -12,6 +12,7 @@ class Deputado
   field :site_deputado, type: String
   field :foto_url, type: String
   field :nome_parlamentar, type: String
+  field :num_legislatura, type: Integer
   field :sexo, type: String
   field :email, type: String
 

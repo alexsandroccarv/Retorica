@@ -3,6 +3,7 @@
 ## RAILS RUNNER ##
 
 APP_PATH = File.expand_path('../../config/application',  __FILE__)
+DOWNLOAD_PATH = File.expand_path('../../public/',  __FILE__)
 
 require File.expand_path('../../config/boot',  __FILE__)
 
@@ -13,9 +14,17 @@ Rails.application.require_environment!
 
 ## THE SCRIPT ##
 
-NUM_LEGISLATURA = '54'
+# Teste de Benchmark
+time = Benchmark.realtime do
 
-url = "http://www.camara.leg.br/internet/Deputado/DeputadosXML.zip"
+# Mininal Legislatura
+NUM_LEGISLATURA = 54
+
+
+
+url = "http://www.camara.leg.br/internet/deputado/DeputadosXML_52a55.zip"
+
+"wget #{url} -p #{DOWNLOAD_PATH} -O deputados.zip"
 
 # Salvando o arquivo dos deputados
 open('../public/deputados.zip', 'wb') do |file|
@@ -29,6 +38,10 @@ open('../public/deputados.zip', 'wb') do |file|
   end
 end
 
+# Array de Threads
+threads = []
+
+
 # Abrindo arquivo Hash
 # Obtendo os deputados da 54ª legislatura (precisa ser melhorado depois)
 hash = Hash.from_xml(File.open('../public/deputados.xml', "r:UTF-8"))
@@ -36,12 +49,18 @@ hash = Hash.from_xml(File.open('../public/deputados.xml', "r:UTF-8"))
 # Navegando na estrutura
 deputados_hash = hash['orgao']['Deputados']['Deputado']
 
-deputados_hash.each do |deputado|
 
-  # XXX FIXME WHY RESTRICT OURSELVES TO THIS LEGISLATURA?
-  if deputado['numLegislatura'] == NUM_LEGISLATURA
+# Filtrando as legislaturas muito antigas
+deputados_legislatura =  deputados_hash.select{ |deputado| deputado['numLegislatura'].to_i >= NUM_LEGISLATURA}
 
+
+
+
+deputados_legislatura.each do |deputado|
+
+  threads << Thread.new do
     ide_cadastro = deputado["ideCadastro"]
+    numLegislatura = deputado['numLegislatura'].to_i
 
     # Criando a conexão com o Servidor da Câmara
     client = Savon.client(wsdl: 'http://www.camara.gov.br/SitCamaraWS/Deputados.asmx?wsdl')
@@ -50,7 +69,7 @@ deputados_hash.each do |deputado|
       :obter_detalhes_deputado,
       :message => {
         :ideCadastro => ide_cadastro,
-        :numLegislatura => NUM_LEGISLATURA
+        :numLegislatura => numLegislatura
       }).to_hash.to_json
 
     deputado = JsonPath.on(deputado_response_details, '$..deputado')
@@ -61,6 +80,7 @@ deputados_hash.each do |deputado|
       nome_parlamentar = item['nome_parlamentar_atual']
       sexo = item['sexo']
       email = item['email']
+
 
       # Dados da Representação do Deputado
       unidade_federativa = UnidadeFederativa.find_or_create_by(:sigla => item['uf_representacao_atual'])
@@ -79,6 +99,7 @@ deputados_hash.each do |deputado|
         :sexo => sexo,
         :email => email,
         :situacao => situacao,
+        :numLegislatura => numLegislatura,
         :clean_name => ActiveSupport::Inflector::transliterate(nome_parlamentar).strip
       )
 
@@ -90,4 +111,13 @@ deputados_hash.each do |deputado|
       partido_atual.deputados << deputado_instance
     end
   end
+
+    # Juntando as Threads no Fim do Processamento
+    threads.each do |thread|
+      thread.join
+    end
+  end
 end
+
+puts "Base Atualizada em #{time} segundos"
+
