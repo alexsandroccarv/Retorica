@@ -103,6 +103,13 @@ words. Again, call it with your database connection information.
     **TODO FIXME**: We could remove this step if we could merge this process
     into either `scrape.py` or `vonmon.py`.
 
+fix_speeches.py
+----
+At this point, it should have all speech saved into database with clean text. The fix_speeches.py will relate speeches with deputies. 
+At some point, some speeches will not be related most beacause of Shorthand Departament does infer the correct deputy name.
+
+Some Manual Correction would be necessary.
+
 
 vonmon.py
 ---------
