@@ -11,8 +11,6 @@ from scrapy.http import Request
 from scrapy.contrib.pipeline.files import FilesPipeline, FileException
 from scrapy.utils.misc import md5sum
 
-from kingsnake.utils.vonmon import stemmify_text, strip_deputy_name
-
 
 _null = object()
 
@@ -178,38 +176,3 @@ class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
                                                            response, info)
         fname, ext = path.split('.', 1)
         return '.'.join([fname, 'rtf'])
-
-
-class VonmonPipeline(object):
-
-    def should_process_item(self, item, spider):
-        return item_is_session(item)
-
-    def process_item(self, item, spider):
-        if not self.should_process_item(item, spider):
-            return item
-
-        try:
-            item['vonmon'] = self._do_process_item(item)
-        except Exception as e:
-            spider.log('Failed to stemmify speech: {0}'.format(e), log.ERROR)
-
-        return item
-
-    def _do_process_item(self, item):
-        filepath = item.get('files')[0].get('path')
-        filepath = os.path.join(self.settings.get('FILES_STORE'), filepath)
-
-        with open(filepath, 'rb') as rtf:
-            text = extract_text_from_rtf_document(rtf)
-
-        stemmed = stemmify_text(text)
-
-        author = item.get('orador').get('nome')
-        author = transliterate_like_rails(author)
-        author = strip_deputy_name(author)
-
-        return {
-            'author': author,
-            'stemmed': stemmed,
-        }
