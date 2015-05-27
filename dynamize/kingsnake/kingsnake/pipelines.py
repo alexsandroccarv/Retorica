@@ -112,7 +112,7 @@ class RetryMediaPipelineMixin(object):
 
         if retries <= self.max_retry_times:
             log.msg(format="Retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=spider, request=request, retries=retries, reason=reason)
+                    level=log.DEBUG, spider=info.spider, request=request, retries=retries, reason=reason)
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
@@ -122,7 +122,7 @@ class RetryMediaPipelineMixin(object):
             return self._process_request()
         else:
             log.msg(format="Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=spider, request=request, retries=retries, reason=reason)
+                    level=log.DEBUG, spider=info.spider, request=request, retries=retries, reason=reason)
 
 
 class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
