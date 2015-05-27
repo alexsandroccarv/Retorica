@@ -89,6 +89,9 @@ class DiscursosSpider(spiders.XMLFeedSpider):
                     discurso.get('orador')['numero'] = self._safely_parse_int(
                         discurso.get('orador').get('numero'))
 
+                    # FIXME Ignore this field for now
+                    del discurso['txtIndexacao']
+
                     yield Discurso(**discurso)
 
     def _safely_parse_datetime(self, s):

@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import os
 from scrapy.command import ScrapyCommand
-from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 from kingsnake.utils import speech_collection_from_command
 
@@ -64,7 +63,7 @@ class Command(ScrapyCommand):
         # XXX To get the start urls, we'll query every document with missing
         # files in the database. We do that through our pipeline's connection
         # *just because we can*.
-        collection = speech_collection_from_command(self)
+        collection = speech_collection_from_command(self, crawler)
 
         speeches = collection.find({
             '$or': [

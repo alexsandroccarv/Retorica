@@ -3,24 +3,15 @@ from __future__ import unicode_literals
 
 import base64
 from StringIO import StringIO as BytesIO
+from scrapy_mongodb import MongoDBPipeline
 
 import xmltodict
 from scrapy import log
 from scrapy.http import Request
 from scrapy.contrib.pipeline.files import FilesPipeline, FileException
 from scrapy.utils.misc import md5sum
-from scrapy_mongodb import MongoDBPipeline as OldStyleMongoDBPipeline
 
 from kingsnake.utils.vonmon import stemmify_text, strip_deputy_name
-
-
-# XXX MongoDBPipeline isn't a new-style class. I find that so unacceptable that
-# I'll do this stupidly dirty hack to fix it.
-MongoDBPipeline = type(
-    'MongoDBPipeline'.encode('utf-8'),
-    (object,),
-    dict(OldStyleMongoDBPipeline.__dict__),
-)
 
 
 _null = object()
