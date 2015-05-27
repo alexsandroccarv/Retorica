@@ -10,6 +10,7 @@ import pymongo
 from clint.textui import puts, progress
 
 from common import transliterate_like_rails
+from finallyaresult import strip_deputy_name
 
 
 def main(argv):

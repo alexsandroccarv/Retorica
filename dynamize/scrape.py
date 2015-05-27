@@ -48,7 +48,7 @@ def main(argv):
     date_format = '%d/%m/%Y'
 
     # A data inicial dos discursos
-    start_date = datetime.date(2011, 2, 2)
+    start_date = datetime.date(2015, 1,1)
 
     # Chunk size in days
     # Note that the service only accepts chunks of 360 days max
@@ -63,7 +63,7 @@ def main(argv):
         ed = min(sd + chunk_size, today)
 
         puts('Obtaining speeches given between {sd} and {ed}'.format(
-            sd=readabledate(sd), ed=readabledat(ed)))
+            sd=readabledate(sd), ed=readabledate(ed)))
 
         sessoes = client.service.ListarDiscursosPlenario(
             dataIni=sd.strftime(date_format), dataFim=ed.strftime(date_format))
@@ -72,8 +72,8 @@ def main(argv):
         first = next(ensure_iterator(first_session.fasesSessao.faseSessao))
         first = next(ensure_iterator(first.discursos.discurso))
 
-        puts('   {0} sessões obtidas'.format(len(sessoes.sessoesDiscursos.sessao)))
-        puts('   Primeira sessão: {0}'.format(first_session.numero))
+        puts('   {0} sessoes obtidas'.format(len(sessoes.sessoesDiscursos.sessao)))
+        puts('   Primeira sessao: {0}'.format(first_session.numero))
         puts('   Primeiro discurso: {0}'.format(first.horaInicioDiscurso))
 
         previous_count = count
@@ -154,10 +154,10 @@ def main(argv):
                         }
                         database.discursos.insert(d)
         else:
-            puts('   Última sessão: {0}'.format(sessao.numero))
-            puts('   Último discurso: {0}'.format(discurso.horaInicioDiscurso))
+            puts('   Ultima sessao: {0}'.format(sessao.numero))
+            puts('   Ultimo discurso: {0}'.format(discurso.horaInicioDiscurso))
 
-        puts('{0} discursos obtidos no período de {1} a {2}'.format(
+        puts('{0} discursos obtidos no periodo de {1} a {2}'.format(
             count - previous_count, sd.strftime(date_format), ed.strftime(date_format)
         ))
 

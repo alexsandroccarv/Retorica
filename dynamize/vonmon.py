@@ -189,11 +189,11 @@ def main(argv):
     parser.add_argument('-P', '--port', type=int, default=27017)
     parser.add_argument('-d', '--database', type=unicode, default='retorica_development')
 
-    parser.add_argument('--mindf', type=float, default=1.0,
-                        help='Minimum document frequency for cuts')
-    parser.add_argument('--maxdf', type=float, default=1.0,
+    parser.add_argument('--mindf', type=float, default=0,
+                        help='Minimum document frequenc for cuts')
+    parser.add_argument('--maxdf', type=float, default=0,
                         help='Maximum document frequency for cuts')
-    parser.add_argument('--ncats', type=int, default=70,
+    parser.add_argument('--ncats', type=int, default=20,
                         help='Number of categories in the generated matrix')
     parser.add_argument('-o', '--output_directory', action=WriteableDir,
                         default=None, help=('Directory where the output data will be saved. '
