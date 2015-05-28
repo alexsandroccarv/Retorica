@@ -280,6 +280,7 @@ def main(argv):
     puts("Building the DTM...")
 
     cv = CountVectorizer(min_df=args.mindf, max_df=args.maxdf)
+
     dtm = cv.fit_transform(corpus)
 
     documents_and_authors = pandas.DataFrame([
