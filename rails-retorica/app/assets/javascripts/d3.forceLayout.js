@@ -127,11 +127,10 @@ d3.custom.forceLayout = function(authors) {
     //.append('svg')
     .attr({
       width: w,
-      height: h
     })
     .style({
       fill: 'transparent',
-      'min-height': '815px'
+      'min-height': '1080px'
     });
 
   // Defs
@@ -158,8 +157,10 @@ d3.custom.forceLayout = function(authors) {
     .attr({
       x: 0,
       y: 0,
-      width: w,
-      height: h
+      width: w
+    })
+    .style({
+      height: '100%'
     })
     .on('click', closeTopics);
 

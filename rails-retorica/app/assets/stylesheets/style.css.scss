@@ -18,6 +18,10 @@ $d_bg : #05504c;
 $bg : #409f89;
 $yellow : #dea62c;
 
+html {
+  overflow-y: hidden;
+}
+
 html, body {
   font-family: 'Oswald';
   font-size: 12px;
@@ -98,9 +102,16 @@ button:focus {
 }
 
 .full-height {
-  min-height: 100%;
+  height: 100vh;
+  position: fixed;
+  z-index: 1;
 }
 
+@media screen and (max-width: 991px) {
+  svg {
+    display: none;
+  }
+}
 
 /* only for column content visible */
 .col-lg-1>div {background-color:#ddd;}
@@ -193,6 +204,7 @@ svg {
   position: relative;
   z-index: 2;
   background: transparent;
+  margin-left: 30%;
 }
 
 .content-description {
@@ -276,10 +288,6 @@ svg {
   transition: opacity .30s ease-in-out;
   -moz-transition: opacity .30s ease-in-out;
   -webkit-transition: opacity .30s ease-in-out;
-}
-
-
-svg {
 }
 
 img.selo {
