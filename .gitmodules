@@ -1,0 +1,3 @@
+[submodule "retorica-rails"]
+	path = retorica-rails
+	url = https://github.com/labhackercd/retorica-rails.git
