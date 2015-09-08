@@ -1,7 +1,0 @@
-<h1>Dashboards</h1>
-
-<ul>
-  <% Dashboard.all.each do |dashboard| %>
-    <li><a href="<%= url_for dashboard %>"><%= dashboard.title %></a></li>
-  <% end %>
-</ul>

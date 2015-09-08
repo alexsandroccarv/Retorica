@@ -1,3 +1,0 @@
-== README
-
-This is an introductional tutorial with the intention of showing how to create a Rails 4 app with MongoDB, using Rspec and Cucumber for testing
