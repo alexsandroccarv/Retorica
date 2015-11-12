@@ -29,6 +29,12 @@ If you got too many errors or you scraped files are missing their files (this is
 $ scrapy crawl teordiscursos
 ```
 
+You'll probably notice that the remote web service uses some sort of rate limiting powered by `503`s. This little command may come in hand:
+
+```bash
+$ watch -n120 'scrapy crawl teordiscursos -a limit=2000 --loglevel=INFO | egrep "(file_status_count|download\/)"'
+```
+
 [pip]: https://pypi.python.org/pypi/pip
 [scrapy]: http://scrapy.org/
 [mongodb]: https://www.mongodb.org/

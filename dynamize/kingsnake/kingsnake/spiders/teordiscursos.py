@@ -12,7 +12,17 @@ def ensure_list(i):
 
 class TeorDiscursosSpider(Spider):
     name = 'teordiscursos'
+    limit = 1000
     start_urls = ['http://labhackercd.net']
+
+    def __init__(self, *args, **kwargs):
+        super(TeorDiscursosSpider, self).__init__(*args, **kwargs)
+        if not isinstance(self.limit, int):
+            try:
+                self.limit = int(self.limit)
+            except:
+                # TODO log
+                self.limit = None
 
     def _speech_url(self, item):
         url = ('http://www.camara.gov.br/SitCamaraWS/'
@@ -30,10 +40,13 @@ class TeorDiscursosSpider(Spider):
 
         speeches = pipeline.collection.find({
             '$or': [
-                {'files': {'$exists': False}},
                 {'files': {'$size': 0}},
+                {'files': {'$exists': False}},
             ],
         })
 
-        for speech in speeches.limit(1000):
+        if self.limit:
+            speeches = speeches.limit(self.limit)
+
+        for speech in speeches:
             yield speech
