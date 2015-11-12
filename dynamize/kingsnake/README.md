@@ -8,7 +8,7 @@ First things first, instructions usually start with installation. And who doesn'
 The only way I know is through [pip][pip]:
 
 ```bash
-$ pip install scrapy scrapy_mongodb xmltodict fake_useragent
+$ pip install -r requirements.txt
 ```
 
 Now crawl them speeches, man!
@@ -21,7 +21,13 @@ $ scrapy crawl discursos
 
 Now this is gonna take some time to finish. It'll crawl about to 95k speeches (last time I did it), so yeah, it's going to take some time. I suggest looking at [cat pictures on Reddit](http://www.reddit.com/r/catpictures).
 
-When it's done, it's done. If you got too many errors you can try running the retry (`scrapy retrydownloads`) command, which may or may not work.
+When it's done, it's done.
+
+If you got too many errors or you scraped files are missing their files (this is, the content of the speech), you should try running the retry command:
+
+```bash
+$ scrapy crawl teordiscursos
+```
 
 [pip]: https://pypi.python.org/pypi/pip
 [scrapy]: http://scrapy.org/

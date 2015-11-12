@@ -10,8 +10,6 @@
 
 BOT_NAME = 'kingsnake'
 
-COMMANDS_MODULE = 'kingsnake.commands'
-
 SPIDER_MODULES = ['kingsnake.spiders']
 NEWSPIDER_MODULE = 'kingsnake.spiders'
 
@@ -26,6 +24,7 @@ ITEM_PIPELINES = [
 
 MONGODB_URI = 'mongodb://localhost:27017'
 MONGODB_DATABASE = 'retorica'
+MONGODB_UNIQUE_KEY = '_id'
 
 DOWNLOADER_MIDDLEWARES = {
     'kingsnake.middleware.RandomUserAgentMiddleware': 401,

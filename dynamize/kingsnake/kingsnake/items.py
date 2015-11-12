@@ -11,6 +11,9 @@ class Sessao(scrapy.Item):
 
 
 class Discurso(scrapy.Item):
+    # unique key
+    _id = scrapy.Field()
+
     # this will be a dict
     orador = scrapy.Field()
     horaInicioDiscurso = scrapy.Field()

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import datetime
+
+import itertools
 import xmltodict
 from scrapy import log
 from scrapy.contrib import spiders
@@ -19,13 +21,8 @@ class DiscursosSpider(spiders.XMLFeedSpider):
     itertag = 'sessoesDiscursos'
     iterator = 'iternodes'
 
-    def __init__(self, *args, **kwargs):
-        self._force_start_urls = kwargs.pop('start_urls', None)
-        super(DiscursosSpider, self).__init__()
-
     def start_requests(self):
-        urls = self._force_start_urls or self._start_urls()
-        return (self.make_requests_from_url(u) for u in urls)
+        return itertools.imap(self.make_requests_from_url, self._start_urls())
 
     def _start_urls(self):
         """Yield urls for `start_requests`.
@@ -42,8 +39,6 @@ class DiscursosSpider(spiders.XMLFeedSpider):
         end = datetime.date.today()
         step = datetime.timedelta(days=90)
         date_format = r'%d/%m/%Y'
-
-        urls = []
 
         while ini <= end:
             it_end = min(ini + step, end)

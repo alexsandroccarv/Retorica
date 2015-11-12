@@ -62,7 +62,6 @@ class NamedCollectionMongoDBPipeline(MongoDBPipeline):
 class DiscursosMongoDBPipeline(ItemSpecificPipeline,
                                NamedCollectionMongoDBPipeline):
 
-    null = object()
     collection_name = 'discursos'
 
     def should_process_item(self, item, spider):
@@ -72,64 +71,18 @@ class DiscursosMongoDBPipeline(ItemSpecificPipeline,
 class SessoesMongoDBPipeline(ItemSpecificPipeline,
                              NamedCollectionMongoDBPipeline):
 
-    null = object()
     collection_name = 'sessoes'
 
     def should_process_item(self, item, spider):
         return item_is_session(item)
 
 
-class RetryException(Exception):
-    def __init__(self, original_exc, *args, **kwargs):
-        self.original_exc = original_exc
-        super(RetryException, self).__init__(*args, **kwargs)
-
-
-class RetryMediaPipelineMixin(object):
-
-    max_retry_times = 3
-
-    def media_downloaded(self, response, request, info):
-        try:
-            return super(RetryMediaPipelineMixin, self).media_downloaded(
-                response, request, info)
-        except FileException as exc:
-            if self._should_retry(exc, response, request, info):
-                raise RetryException(exc)
-            else:
-                raise
-
-    def _should_retry(self, exception, response, request, info):
-        return True
-
-    def _process_request(self, request, info):
-        pass
-
-    def _retry(self, request, reason, info):
-        retries = request.meta.get('retry_times', 0) + 1
-
-        if retries <= self.max_retry_times:
-            log.msg(format="Retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=info.spider, request=request, retries=retries, reason=reason)
-            retryreq = request.copy()
-            retryreq.meta['retry_times'] = retries
-            retryreq.dont_filter = True
-            #retryreq.priority = request.priority + self.priority_adjust
-            #return retryreq
-
-            return self._process_request()
-        else:
-            log.msg(format="Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=info.spider, request=request, retries=retries, reason=reason)
-
-
 class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
 
     def should_process_item(self, item, spider):
-        return item_is_session(item)
+        return item_is_speech(item) and not item.get('files', [])
 
     def get_media_requests(self, item, info):
-
         url = ('http://www.camara.gov.br/SitCamaraWS/'
                 'SessoesReunioes.asmx/obterInteiroTeorDiscursosPlenario'
                 '?codSessao={sessao}&numOrador={orador}'
