@@ -6,9 +6,8 @@ from StringIO import StringIO as BytesIO
 from scrapy_mongodb import MongoDBPipeline
 
 import xmltodict
-from scrapy import log
 from scrapy.http import Request
-from scrapy.contrib.pipeline.files import FilesPipeline, FileException
+from scrapy.contrib.pipeline.files import FilesPipeline
 from scrapy.utils.misc import md5sum
 
 
@@ -125,7 +124,6 @@ class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
         # XXX Original `file_path` implementation appends the request's query
         # string into the file name, and we don't like that, so we're
         # overriding it and hacking around it.
-        path = super(TeorDiscursoPipeline, self).file_path(request,
-                                                           response, info)
+        path = super(TeorDiscursoPipeline, self).file_path(request, response, info)
         fname, ext = path.split('.', 1)
         return '.'.join([fname, 'rtf'])
