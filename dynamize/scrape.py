@@ -10,7 +10,8 @@ import argparse
 
 import suds
 import pymongo
-from clint.textui import indent, puts
+from clint.textui import indent
+from common import puts
 
 
 def ensure_iterator(obj):
@@ -62,8 +63,8 @@ def main(argv):
     while sd <= today:
         ed = min(sd + chunk_size, today)
 
-        puts('Obtaining speeches given between {sd} and {ed}'.format(
-            sd=readabledate(sd), ed=readabledat(ed)))
+        puts('Obtaining speeches given between {sd} and {ed} é'.format(
+            sd=readabledate(sd), ed=readabledate(ed)))
 
         sessoes = client.service.ListarDiscursosPlenario(
             dataIni=sd.strftime(date_format), dataFim=ed.strftime(date_format))

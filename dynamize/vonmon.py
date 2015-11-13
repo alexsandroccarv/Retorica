@@ -15,7 +15,7 @@ import rpy2.robjects
 import pymongo
 import errno
 from sklearn.feature_extraction.text import CountVectorizer
-from clint.textui import indent, puts, progress, colored
+from clint.textui import indent, puts as unsafe_puts, progress, colored
 
 
 # XXX BEHOLD DA' MONKEYPATCH BELOW!!!
@@ -37,6 +37,7 @@ class LookupByNameTypeDict(dict):
 pandas.rpy.common.VECTOR_TYPES = LookupByNameTypeDict(pandas.rpy.common.VECTOR_TYPES)
 
 # END OF MONKEYPATCH: We're *safe* now.
+
 
 
 def exp_agenda_vonmon(dtm, authors, ncats=70, verbose=False, kappa=400):
