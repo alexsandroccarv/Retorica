@@ -9,6 +9,8 @@ import pandas
 import pymongo
 from clint.textui import puts, progress
 
+from common import transliterate_like_rails
+
 
 def main(argv):
     parser = argparse.ArgumentParser()
