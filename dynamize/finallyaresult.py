@@ -26,20 +26,6 @@ def parameterize_like_rails(string, sep='-'):
     return p.lower()
 
 
-def strip_deputy_name(name):
-    # strip AKIRA OTSUBO (PRESIDENTE)
-    name = re.sub(r'\s*\([^\)]+\)\s*$', '', name)
-
-    # strip ALGUEM, ALGUMA COISA
-    name = re.sub(r'\s*,.*$', '', name)
-
-    # strip ALGUEM - PARLAMENTAR JOVEM
-    # but don't touch AKIRA-TO
-    name = re.sub(r'\s+-.*$', '', name)
-
-    return name
-
-
 def find_deputy_by_name(collection, name):
     clean_name = transliterate_like_rails(name)
     return deputy

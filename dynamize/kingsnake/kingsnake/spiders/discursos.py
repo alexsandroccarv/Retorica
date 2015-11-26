@@ -35,7 +35,7 @@ class DiscursosSpider(spiders.XMLFeedSpider):
         )
 
         # TODO FIXME we should somehow parametrize all of this
-        ini = datetime.date(2011, 1, 1)
+        ini = datetime.date(2014, 1, 1)
         end = datetime.date.today()
         step = datetime.timedelta(days=90)
         date_format = r'%d/%m/%Y'
@@ -87,7 +87,7 @@ class DiscursosSpider(spiders.XMLFeedSpider):
                     # FIXME Ignore this field for now
                     del discurso['txtIndexacao']
 
-                    yield Discurso(**discurso)
+                    yield Discurso(_id=None, **discurso)
 
     def _safely_parse_datetime(self, s):
         if s is None:

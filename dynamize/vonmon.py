@@ -1,21 +1,38 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import re
 import sys
 import json
 import os.path
-import numpy
 import argparse
 import datetime
 import itertools
+from operator import itemgetter
 
+import errno
+import numpy
 import pandas
 import pandas.rpy
-import rpy2.robjects
 import pymongo
-import errno
+import rpy2.robjects
 from sklearn.feature_extraction.text import CountVectorizer
-from clint.textui import indent, puts, progress, colored
+from clint.textui import puts, progress
+from .utils.transliterate import transliterate
+
+from utils.stem import stem_rtf_file
+
+import os.path
+
+
+def here(*args):
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), *args))
+
+
+def merge(*dicts):
+    r = dict()
+    map(r.update, reversed(dicts))
+    return r
 
 
 # XXX BEHOLD DA' MONKEYPATCH BELOW!!!
@@ -26,6 +43,7 @@ from clint.textui import indent, puts, progress, colored
 # `numpy.int64`, so it's `id()` is different. Since I don't know why that is
 # happening nor how to prevent it, I'll simply monkeypatch that dict and make
 # it lookup types by name. It works for us.
+
 
 class LookupByNameTypeDict(dict):
     def __init__(self, actual):
@@ -181,8 +199,21 @@ class WriteableDir(argparse.Action):
             raise argparse.ArgumentError(prospective_dir, e.message)
 
 
-def main(argv):
+def normalize_name(name):
+    # strip AKIRA OTSUBO (PRESIDENTE)
+    name = re.sub(r'\s*\([^\)]+\)\s*$', '', name)
 
+    # strip ALGUEM, ALGUMA COISA
+    name = re.sub(r'\s*,.*$', '', name)
+
+    # strip ALGUEM - PARLAMENTAR JOVEM
+    # but don't touch AKIRA-TO
+    name = re.sub(r'\s+-.*$', '', name)
+
+    return name
+
+
+def main(argv):
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-H', '--host', type=unicode, default='localhost')
@@ -210,8 +241,8 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    AUTHOR_COLUMN = 'author_clean'
-    CONTENT_COLUMN = 'conteudo_stemmed'
+    AUTHOR_COLUMN = 'vonmon_author'
+    CONTENT_COLUMN = 'vonmon_content'
 
     # Sanitize arguments
     args.mindf = max(min(args.mindf, 1.0), 0.0)
@@ -238,17 +269,11 @@ def main(argv):
     database = getattr(client, args.database)
 
     # Lookup documents
-    lookup = {
-        'conteudo_stemmed': {'$exists': True},
-        '$and': [
-            {'deputy_id': {'$exists': True}},
-            {'deputy_id': {'$ne': None}},
-        ],
-    }
+    lookup = dict()
 
     if args.phases and args.phases != '*':
-        phases = [p.strip() for p in args.phases.split(',')]
-        lookup['fase_sessao.codigo'] = {'$in': phases}
+        phases = map(lambda s: s.strip(), args.phases.split(','))
+        lookup['faseSessao.codigo'] = {'$in': phases}
 
     dt_lookup = {}
 
@@ -258,25 +283,65 @@ def main(argv):
         dt_lookup['$lte'] = args.final_term
 
     if dt_lookup:
-        lookup['proferido_em'] = dt_lookup
+        lookup['horaInicioDiscurso'] = dt_lookup
 
-    author_column = 'author_clean'
+    puts(repr(lookup))
 
-    database.discursos.ensure_index(author_column)
+    collection = database.discursos
 
-    documents = database.discursos.find(lookup)
+    puts("Normalizing author names...")
 
-    documents = documents.sort(author_column)
+    speeches = collection.find(merge(lookup, {AUTHOR_COLUMN: {'$exists': False}}))
 
-    documents = progress.bar(documents, expected_size=documents.count())
+    for s in progress.bar(speeches, expected_size=speeches.count()):
+        collection.update({'_id': s['_id']}, {
+            '$set': {
+                AUTHOR_COLUMN: transliterate(normalize_name(s['orador']['nome'])),
+            },
+        })
 
-    documents = eliminate_authors_with_only_one_speech(documents, lambda x: x[AUTHOR_COLUMN])
+    lookup = merge(lookup, {AUTHOR_COLUMN: {'$exists': True}})
 
-    collector = Collector(lambda i: i[CONTENT_COLUMN])
+    puts("Preparing the corpus...")
 
-    corpus = itertools.imap(collector.collect, documents)
+    speeches = collection.find(lookup)
+
+    for s in progress.bar(speeches, expected_size=speeches.count()):
+        f = s['files']
+
+        if len(f) != 1:
+            puts("Ignoring {s}: it has {n} files!".format(s=s['_id'], n=len(f)))
+            continue
+
+        f = f[0]
+
+        with open(here('kingsnake', f['path'])) as rtf_file:
+            content = stem_rtf_file(rtf_file)
+
+        collection.update({'_id': s['_id']}, {
+            '$set': {
+                CONTENT_COLUMN: content,
+            },
+        })
+
+    lookup = merge(lookup, {CONTENT_COLUMN: {'$exists': True}})
+
+    puts("Optimizing the corpus...")
+
+    collection.ensure_index(AUTHOR_COLUMN)
+
+    speeches = collection.find(lookup).sort(AUTHOR_COLUMN)
+
+    speeches = progress.bar(speeches, expected_size=speeches.count())
+
+    speeches = eliminate_authors_with_only_one_speech(speeches, itemgetter(AUTHOR_COLUMN))
+
+    collector = Collector(itemgetter(CONTENT_COLUMN))
+
+    corpus = itertools.imap(collector.collect, speeches)
 
     # Generate the Document Term Matrix
+
     puts("Building the DTM...")
 
     cv = CountVectorizer(min_df=args.mindf, max_df=args.maxdf)

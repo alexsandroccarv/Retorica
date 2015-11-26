@@ -9,9 +9,9 @@ def puts(s, *args, **kwargs):
     return unsafe_puts(s.encode('utf-8'), *args, **kwargs)
 
 
-def transliterate_like_rails(string):
+def transliterate_like_rails(s, encoding='utf-8'):
     """Our best attempt to do the same thing as ActiveSupport::Inflector::transliterate
     """
-    string = unicodedata.normalize('NFKC', string)
-    string = unihandecode.unidecode(string)
-    return string.encode('ascii', 'replace').decode('utf-8')
+    s = unicodedata.normalize('NFKC', s)
+    s = unihandecode.unidecode(s)
+    return s.encode('ascii', 'replace').decode(encoding)
