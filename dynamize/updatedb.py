@@ -36,8 +36,6 @@ def main(argv):
     partidos_collection = database.partidos
     uf_collection = database.unidade_federativas
 
-    deputados_request = requests.get(u'http://www.camara.leg.br/internet/deputado/DeputadosXML_52a55.zip')
-
     deputados_file = StringIO(deputados_request.content)
 
     deputados_zip_file = zipfile.ZipFile(deputados_file)

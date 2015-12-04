@@ -2,123 +2,96 @@
 from __future__ import unicode_literals
 
 import base64
-from StringIO import StringIO as BytesIO
-from scrapy_mongodb import MongoDBPipeline
 
+import dblite
 import xmltodict
 from scrapy.http import Request
-from scrapy.contrib.pipeline.files import FilesPipeline
-from scrapy.utils.misc import md5sum
+from scrapy.pipelines.files import FilesPipeline
+
+from kingsnake.items import Discurso
 
 
-_null = object()
+class DbLitePipeline(object):
 
+    item_class = None
+    table_name = None
 
-def item_is_speech(item):
-    """Dumb method to guess if the given *item* is a Speech
-    """
-    return item.get('sessao', _null) is not _null
+    def open_spider(self, spider):
+        self.crawler = spider.crawler
+        self.settings = spider.settings
 
+        dsn = self.settings.get('SQLITE_DSN')
 
-def item_is_session(item):
-    """Dumb method to guess if the given *item* is a Session
-    """
-    return item.get('codigo', _null) is not _null
+        table_name = self.table_name
+        if table_name is None:
+            table_name = self.item_class.__class__.__name__.lower()
 
+        self.dsn = ':'.join([dsn, table_name])
+        self.dblite = dblite.open(self.item_class, self.dsn, autocommit=True)
 
-class ItemSpecificPipeline(object):
-    """Mixin for pipelines which are specific to some items. You just
-    reimplement `should_process_item` to return weather or not the specific
-    *item* should be processed.
-    """
-
-    def should_process_item(self, item, spider):
-        return True
+    def close_spider(self, spider):
+        self.dblite.commit()
+        self.dblite.close()
 
     def process_item(self, item, spider):
-        if not self.should_process_item(item, spider):
+        if isinstance(item, self.item_class):
+            item = self._do_process_item(item)
+        return item
+
+    def _do_process_item(self, item):
+
+        # If it has an *_id* we should just update it and move on.
+        if item.get('_id') is not None:
+            self.dblite.update(item)
             return item
+
+        old = self.dblite.get_one({
+            'faseSessao': item['faseSessao'],
+            'numeroOrador': item['numeroOrador'],
+            'numeroQuarto': item['numeroQuarto'],
+            'numeroInsercao': item['numeroInsercao'],
+        })
+
+        if not old:
+            self.dblite.put(item)
         else:
-            return super(ItemSpecificPipeline, self).process_item(item, spider)
+            old.update(item)
+            self.dblite.update(old)
+
+        # FIXME What should we return? ...
+        # ... The original item or the newly inserted item? Pls help.
+        return item
 
 
-class NamedCollectionMongoDBPipeline(MongoDBPipeline):
-    """A `MongoDBPipeline` whose `collection` is independent from the
-    configured `MONGODB_COLLECTION`. Instead, it's specified through
-    `collection_name`.
-    """
-
-    # Specify the collection name!
-    collection_name = None
-
-    def configure(self, *args, **kwargs):
-        super(NamedCollectionMongoDBPipeline, self).configure(*args, **kwargs)
-
-        if self.collection_name is not None:
-            self.config['collection'] = self.collection_name
+class DiscursoDbLitePipeline(DbLitePipeline):
+    item_class = Discurso
+    table_name = 'discursos'
 
 
-class DiscursosMongoDBPipeline(ItemSpecificPipeline,
-                               NamedCollectionMongoDBPipeline):
+class TeorDiscursoPipeline(FilesPipeline):
 
-    collection_name = 'discursos'
-
-    def should_process_item(self, item, spider):
-        return item_is_speech(item)
-
-
-class SessoesMongoDBPipeline(ItemSpecificPipeline,
-                             NamedCollectionMongoDBPipeline):
-
-    collection_name = 'sessoes'
-
-    def should_process_item(self, item, spider):
-        return item_is_session(item)
-
-
-class TeorDiscursoPipeline(ItemSpecificPipeline, FilesPipeline):
-
-    def should_process_item(self, item, spider):
-        return item_is_speech(item) and not item.get('files', [])
+    def process_item(self, item, spider):
+        # TODO We should give users a way to "refresh" file contents.
+        if isinstance(item, Discurso) and not item.get('files'):
+            return super(TeorDiscursoPipeline, self).process_item(item, spider)
+        return item
 
     def get_media_requests(self, item, info):
         url = ('http://www.camara.gov.br/SitCamaraWS/'
                 'SessoesReunioes.asmx/obterInteiroTeorDiscursosPlenario'
-                '?codSessao={sessao}&numOrador={orador}'
-                '&numQuarto={quarto}&numInsercao={insercao}')
+                '?codSessao={sessao}&numOrador={numeroOrador}'
+                '&numQuarto={numeroQuarto}&numInsercao={numeroInsercao}')
 
-        url = url.format(sessao=item.get('sessao'),
-                         orador=item.get('orador').get('numero'),
-                         quarto=item.get('numeroQuarto'),
-                         insercao=item.get('numeroInsercao'))
-
-        return [Request(url)]
+        return [Request(url.format(**item))]
 
     def file_downloaded(self, response, request, info):
-
-        # The downloaded file is a XML file which stores the actual RTF file as
-        # a base64 encoded string. Here we extract and decode that value.
-
-        path = self.file_path(request, response=response, info=info)
-
         rdata = xmltodict.parse(response.body)
-
         content = rdata.get('sessao').get('discursoRTFBase64')
-
         content = base64.b64decode(content)
 
-        buf = BytesIO(content)
+        request.body = content
 
-        self.store.persist_file(path, buf, info)
-
-        checksum = md5sum(buf)
-
-        return checksum
-
-    def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.FILES_RESULT_FIELD in item.fields:
-            item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
-        return item
+        return super(TeorDiscursoPipeline, self).file_downloaded(response, request, info)
 
     def file_path(self, request, response=None, info=None):
         # XXX Original `file_path` implementation appends the request's query

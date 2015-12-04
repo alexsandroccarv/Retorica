@@ -1,3 +1,6 @@
 data
 cache
-kingsnake/kingsnake/files
+kingsnake/files
+kingsnake/db.sqlite
+kingsnake/db.sqlite-journal
+fotos

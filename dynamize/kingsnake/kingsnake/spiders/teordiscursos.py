@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from scrapy.spider import Spider
-from kingsnake.pipelines import DiscursosMongoDBPipeline
+
+from scrapy import spiders
 
 
-def ensure_list(i):
-    if not isinstance(i, (list, tuple)):
-        i = [i]
-    return i
-
-
-class TeorDiscursosSpider(Spider):
+class TeorDiscursosSpider(spiders.Spider):
     name = 'teordiscursos'
     limit = 1000
     start_urls = ['http://labhackercd.net']

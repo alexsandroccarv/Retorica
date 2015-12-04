@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 import datetime
-
 import itertools
+
 import xmltodict
-from scrapy import log
-from scrapy.contrib import spiders
-from kingsnake.items import Discurso, Sessao
-
-
-def ensure_list(i):
-    if not isinstance(i, (list, tuple)):
-        i = [i]
-    return i
+from scrapy import spiders
+from kingsnake.items import Discurso
+from kingsnake.spiders.utils import ensure_list
 
 
 class DiscursosSpider(spiders.XMLFeedSpider):
@@ -56,21 +51,21 @@ class DiscursosSpider(spiders.XMLFeedSpider):
         sessoes = data.pop('sessoesDiscursos').pop('sessao')
 
         for sessao in ensure_list(sessoes):
-            fases = sessao.pop('fasesSessao').pop('faseSessao')
+            fases_sessao = sessao.pop('fasesSessao').pop('faseSessao')
 
             sessao['data'] = self._safely_parse_datetime(sessao.get('data'))
 
             #yield Sessao(**sessao)
 
-            for fase in ensure_list(fases):
+            for fase_sessao in ensure_list(fases_sessao):
 
-                discursos = fase.pop('discursos').pop('discurso')
+                discursos = fase_sessao.pop('discursos').pop('discurso')
 
                 for discurso in ensure_list(discursos):
                     discurso['sessao'] = sessao.get('codigo')
 
-                    # copy the dict, just for the sake of it
-                    discurso['faseSessao'] = dict(fase)
+                    # copy the dict, just for the sake of it (???)
+                    discurso['faseSessao'] = fase_sessao.get('codigo')
 
                     discurso['horaInicioDiscurso'] = \
                         self._safely_parse_datetime(discurso.get('horaInicioDiscurso'))
@@ -81,13 +76,22 @@ class DiscursosSpider(spiders.XMLFeedSpider):
                     discurso['numeroQuarto'] = self._safely_parse_int(
                         discurso.get('numeroQuarto'))
 
-                    discurso.get('orador')['numero'] = self._safely_parse_int(
-                        discurso.get('orador').get('numero'))
+                    discurso.setdefault('orador', {})['numero'] = self._safely_parse_int(
+                        discurso.get('orador', {}).get('numero', '0'))
 
-                    # FIXME Ignore this field for now
+                    # XXX Ignore this field for now
                     del discurso['txtIndexacao']
 
-                    yield Discurso(_id=None, **discurso)
+                    orador = discurso.pop('orador', {})
+
+                    discurso.update({
+                        'nomeOrador': orador['nome'],
+                        'numeroOrador': orador['numero'],
+                        'partidoOrador': orador['partido'],
+                        'ufOrador': orador['uf'],
+                    })
+
+                    yield Discurso(**discurso)
 
     def _safely_parse_datetime(self, s):
         if s is None:
@@ -102,9 +106,8 @@ class DiscursosSpider(spiders.XMLFeedSpider):
         try:
             return datetime.datetime.strptime(s, fmt)
         except ValueError:
-            self.log("Failed to parse date '{0}' using format '{1}'".format(
-                s, fmt
-            ), log.ERROR)
+            self.logger.error(
+                "Failed to parse date '{0}' using format '{1}'".format(s, fmt))
 
     def _safely_parse_int(self, s):
         try:
@@ -112,3 +115,4 @@ class DiscursosSpider(spiders.XMLFeedSpider):
         except ValueError:
             self.log(
                 "Failed to parse '{0}' as an integer".format(s), log.ERROR)
+
