@@ -5,13 +5,6 @@ import dblite.serializers
 import scrapy
 
 
-class Sessao(scrapy.Item):
-    codigo = scrapy.Field()
-    data = scrapy.Field()
-    numero = scrapy.Field()
-    tipo = scrapy.Field()
-
-
 class Discurso(scrapy.Item):
     _id = scrapy.Field()
 
@@ -31,3 +24,13 @@ class Discurso(scrapy.Item):
     sumario = scrapy.Field()
 
     files = scrapy.Field(dblite_serializer=dblite.serializers.CompressedJsonSerializer)
+
+
+class Deputado(scrapy.Item):
+    _id = scrapy.Field()
+
+    uf = scrapy.Field()
+    nome = scrapy.Field()
+    partido = scrapy.Field()
+    ide_cadastro = scrapy.Field()
+    num_legislatura = scrapy.Field()

@@ -32,6 +32,7 @@ DEFAULT_REQUEST_HEADERS = {
 ITEM_PIPELINES = {
     'kingsnake.pipelines.TeorDiscursoPipeline': 1,
     'kingsnake.pipelines.DiscursoDbLitePipeline': 2,
+    'kingsnake.pipelines.DeputadosDbLitePipeline': 3,
 }
 
 DOWNLOADER_MIDDLEWARES = {

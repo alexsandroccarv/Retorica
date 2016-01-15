@@ -8,7 +8,7 @@ import xmltodict
 from scrapy.http import Request
 from scrapy.pipelines.files import FilesPipeline
 
-from kingsnake.items import Discurso
+from kingsnake.items import Discurso, Deputado
 
 
 class DbLitePipeline(object):
@@ -39,6 +39,14 @@ class DbLitePipeline(object):
         return item
 
     def _do_process_item(self, item):
+        raise NotImplementedError
+
+
+class DiscursoDbLitePipeline(DbLitePipeline):
+    item_class = Discurso
+    table_name = 'discursos'
+
+    def _do_process_item(self, item):
 
         # If it has an *_id* we should just update it and move on.
         if item.get('_id') is not None:
@@ -63,9 +71,29 @@ class DbLitePipeline(object):
         return item
 
 
-class DiscursoDbLitePipeline(DbLitePipeline):
-    item_class = Discurso
-    table_name = 'discursos'
+class DeputadosDbLitePipeline(DbLitePipeline):
+    item_class = Deputado
+    table_name = 'deputados'
+
+    def _do_process_item(self, item):
+
+        # If it has an *_id* we should just update it and move on.
+        if item.get('_id') is not None:
+            self.dblite.update(item)
+            return item
+
+        old = self.dblite.get_one({'ide_cadastro': item['ide_cadastro']})
+
+        if not old:
+            self.dblite.put(item)
+        else:
+            return item
+            old.update(item)
+            self.dblite.update(old)
+
+        # FIXME What should we return? ...
+        # ... The original item or the newly inserted item? Pls help.
+        return item
 
 
 class TeorDiscursoPipeline(FilesPipeline):
